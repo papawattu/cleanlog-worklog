@@ -4,9 +4,10 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 )
 
-func startWebServer(ws WorkService) error {
+func startWebServer(port string, ws WorkService) error {
 
 	controllers, err := MakeControllers(context.Background(), NewWorkController(ws))
 	if err != nil {
@@ -22,39 +23,22 @@ func startWebServer(ws WorkService) error {
 	http.HandleFunc("/api/worklog/{workid}", controllers.HandleRequest)
 	http.HandleFunc("/api/worklog", controllers.HandleRequest)
 
-	http.ListenAndServe(":3000", nil)
+	log.Printf("Starting Work Log server on port %s\n", port)
+
+	http.ListenAndServe(port, nil)
 
 	return nil
 }
 func main() {
 
+	port := ":3000"
+	if os.Getenv("PORT") != "" {
+		port = ":" + os.Getenv("PORT")
+	}
+
 	workLogRepo := NewWorkLogRepository()
 	workService := NewWorkService(workLogRepo)
 
-	startWebServer(workService)
-
-	workID, err := workService.StartWork("Test work log")
-	if err != nil {
-		log.Fatalf("Error starting work: %v", err)
-	}
-
-	task := Task{TaskID: 1}
-	err = workService.LogWork(workID, task)
-	if err != nil {
-		log.Fatalf("Error logging work: %v", err)
-	}
-
-	err = workService.EndWork(workID)
-	if err != nil {
-		log.Fatalf("Error ending work: %v", err)
-	}
-
-	wl, err := workService.GetWorkLog(workID)
-
-	if err != nil {
-		log.Fatalf("Error getting work log: %v", err)
-	}
-
-	log.Printf("Work log Id: %+v", *wl.WorkLogID)
+	startWebServer(port, workService)
 
 }
