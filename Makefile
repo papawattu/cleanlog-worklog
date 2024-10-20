@@ -1,4 +1,4 @@
-.PHONY: all build clean client run
+.PHONY: all build clean client run run-client watch docker-build
 
 all: build client
 
