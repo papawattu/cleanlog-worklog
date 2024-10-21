@@ -25,9 +25,8 @@ func startWebServer(port string, ws WorkService) error {
 
 	log.Printf("Starting Work Log server on port %s\n", port)
 
-	http.ListenAndServe(port, nil)
+	return http.ListenAndServe(port, nil)
 
-	return nil
 }
 func main() {
 
@@ -39,6 +38,8 @@ func main() {
 	workLogRepo := NewWorkLogRepository()
 	workService := NewWorkService(workLogRepo)
 
-	startWebServer(port, workService)
+	if err := startWebServer(port, workService); err != nil {
+		log.Fatal(err)
+	}
 
 }
