@@ -6,19 +6,22 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
+	"github.com/papawattu/cleanlog-worklog/internal/models"
 	"github.com/papawattu/cleanlog-worklog/internal/repo"
 	"github.com/papawattu/cleanlog-worklog/internal/services"
 	"github.com/papawattu/cleanlog-worklog/types"
 )
 
-var location string
+var (
+	location    string
+	workLogRepo = repo.NewWorkLogRepository()
+	workService = services.NewWorkService(workLogRepo)
+)
 
 func TestGetController(t *testing.T) {
-
-	workLogRepo := repo.NewWorkLogRepository()
-	workService := services.NewWorkService(workLogRepo)
 
 	controllers := NewWorkController(context.Background(), http.NewServeMux(), workService, nil)
 
@@ -41,8 +44,6 @@ func TestGetController(t *testing.T) {
 }
 
 func TestCreateWorkLogController(t *testing.T) {
-	workLogRepo := repo.NewWorkLogRepository()
-	workService := services.NewWorkService(workLogRepo)
 
 	controllers := NewWorkController(context.Background(), http.NewServeMux(), workService, nil)
 
@@ -75,14 +76,17 @@ func TestCreateWorkLogController(t *testing.T) {
 	}
 }
 func TestGetWorkLogController(t *testing.T) {
-	workLogRepo := repo.NewWorkLogRepository()
-	workService := services.NewWorkService(workLogRepo)
+	if location == "" {
+		t.Skip("Skipping TestGetWorkLogController because location is not set")
+	}
 
 	controllers := NewWorkController(context.Background(), http.NewServeMux(), workService, nil)
 
 	server := httptest.NewServer(controllers.server)
 
 	defer server.Close()
+
+	t.Logf("Location: %s", server.URL+location)
 
 	r, err := http.Get(server.URL + location)
 
@@ -111,4 +115,33 @@ func TestGetWorkLogController(t *testing.T) {
 	}
 	t.Log("Test passed")
 
+}
+func TestInlineTasksWithEmptyTasks(t *testing.T) {
+	tasks := []models.Task{}
+
+	taskIds := inlineTasks(tasks)
+
+	if !reflect.DeepEqual(taskIds, []int{}) {
+		t.Fatalf("Expected empty int array, got %v", taskIds)
+	}
+	t.Log("Test passed")
+}
+func TestInlineTasks(t *testing.T) {
+	tasks := []models.Task{{TaskID: 1}, {TaskID: 2}, {TaskID: 3}}
+
+	taskIds := inlineTasks(tasks)
+
+	if !reflect.DeepEqual(taskIds, []int{1, 2, 3}) {
+		t.Fatalf("Expected '1, 2, 3', got %v", taskIds)
+	}
+	t.Log("Test passed")
+}
+func TestNilTasks(t *testing.T) {
+
+	taskIds := inlineTasks(nil)
+
+	if !reflect.DeepEqual(taskIds, []int{}) {
+		t.Fatalf("Expected empty int array, got %v", taskIds)
+	}
+	t.Log("Test passed")
 }

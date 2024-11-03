@@ -27,9 +27,16 @@ func startWebServer(server *http.Server, ws services.WorkService) error {
 	// 	},
 	// }
 
-	controllers.NewWorkController(context.Background(), server.Handler.(*http.ServeMux), ws, func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		log.Printf("Request received: %s %s\n", r.Method, r.URL)
-	})
+	middleware := []func(http.Handler) http.Handler{
+		func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				log.Printf("Request received: %s %s\n", r.Method, r.URL)
+				next.ServeHTTP(w, r)
+				log.Printf("Request completed: %s %s\n", r.Method, r.URL)
+			})
+		},
+	}
+	controllers.NewWorkController(context.Background(), server.Handler.(*http.ServeMux), ws, middleware)
 
 	log.Printf("Starting Work Log server on port %s\n", server.Addr)
 

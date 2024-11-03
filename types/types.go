@@ -7,6 +7,7 @@ type WorkResponse struct {
 	Date        string `json:"date"`
 	CreatedAt   string `json:"createdAt"`
 	UpdatedAt   string `json:"updatedAt"`
+	UserID      int    `json:"userId"`
 }
 type CreateWorkRequest struct {
 	Description string `json:"description"`

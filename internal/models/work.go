@@ -27,6 +27,8 @@ func NewWorkLog(description string, date time.Time) (WorkLog, error) {
 		WorkLogDescription: description,
 		CreationDate:       time.Now(),
 		LastUpdateDate:     time.Now(),
+		Tasks:              make([]Task, 0),
+		UserID:             0,
 	}
 	return wl, nil
 }

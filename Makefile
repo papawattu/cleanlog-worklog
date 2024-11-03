@@ -3,13 +3,13 @@
 all: build client
 
 build:
-	@go build -o bin/main *.go 
+	@go build -o bin/cleanlog-worklog ./cmd/main.go
 
 client:
-	@go build -o bin/client client/main.go
+	@go build -o bin/client ./client/main.go
 
 run: build
-	@./bin/main
+	@./bin/cleanlog-worklog
 
 run-client: client
 	@./bin/client

@@ -39,12 +39,6 @@ func CreateWorkLog(description string, baseUri string) (string, error) {
 		return "", nil
 	}
 
-	r := map[string]int{}
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		log.Fatalf("Error decoding JSON: %s", err)
-		return "", nil
-	}
-
 	log.Printf("Work log created with ID: %s\n", resp.Header.Get("Location"))
 
 	return resp.Header.Get("Location"), nil

@@ -128,3 +128,10 @@ func TestChangeDescription(t *testing.T) {
 		t.Errorf("Expected description %v, got %v", description, wl.WorkLogDescription)
 	}
 }
+
+func TestTasksAreInitialized(t *testing.T) {
+	wl, _ := NewWorkLog("Test work log", time.Now())
+	if wl.Tasks == nil {
+		t.Errorf("Expected Tasks to be initialized, got nil")
+	}
+}
