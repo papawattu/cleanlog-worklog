@@ -16,7 +16,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o bin/worklog ./
+RUN make build
 
 
 # Stage 2: Final stage
