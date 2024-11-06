@@ -45,6 +45,8 @@ func startWebServer(server *http.Server, ws services.WorkService) error {
 }
 func main() {
 
+	ctx := context.Background()
+
 	var (
 		workService services.WorkService
 		port        string
@@ -63,12 +65,13 @@ func main() {
 		topic = os.Getenv("EVENT_TOPIC")
 	}
 
-	if os.Getenv("EVENT_BROADCASTER") != "" {
-		eventBroadcaster := events.NewEventBroadcaster(repo.NewWorkLogRepository(), os.Getenv("EVENT_BROADCASTER"), topic)
+	if os.Getenv("EVENT_BROADCASTER") != "" && os.Getenv("EVENT_STREAM") != "" {
+		eventBroadcaster := events.NewEventBroadcaster(ctx, repo.NewWorkLogRepository(), os.Getenv("EVENT_BROADCASTER"), os.Getenv("EVENT_STREAM"), topic)
 		workService = services.NewWorkService(eventBroadcaster)
 	} else {
 		workService = services.NewWorkService(repo.NewWorkLogRepository())
 	}
+
 	server = &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
 		Handler: http.NewServeMux(),

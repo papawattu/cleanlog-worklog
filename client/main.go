@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/papawattu/cleanlog-worklog/types"
 )
@@ -32,7 +33,9 @@ func CreateWorkLog(description string, baseUri string) (string, error) {
 	if err != nil {
 		log.Fatal("Error:", err)
 	}
-	defer resp.Body.Close()
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
 	if resp.StatusCode != http.StatusCreated {
 		log.Fatalf("Error: status code %d\n", resp.StatusCode)
@@ -45,18 +48,42 @@ func CreateWorkLog(description string, baseUri string) (string, error) {
 }
 func GetWorkLog(loc string, baseUri string) {
 	url := fmt.Sprintf("%s%s", baseUri, loc)
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Println("Error:", err)
-		return
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		log.Println("Error: status code", resp.StatusCode)
-		return
+	var resp *http.Response
+	var err error
+	var count int = 0
+
+	for {
+		resp, err = http.Get(url)
+		if err != nil {
+			log.Println("Error:", err)
+			return
+		}
+
+		if resp.StatusCode == http.StatusNotFound {
+			if count > 5 {
+				log.Fatalln("Work log not found")
+				return
+			}
+			count++
+			log.Printf("Work log not found at %s waiting - times %d\n", url, count)
+			time.Sleep(1 * time.Second)
+		} else {
+			if resp.StatusCode == http.StatusOK {
+				log.Printf("Work log found at %s\n", url)
+				break
+			} else {
+				log.Fatalf("Error: status code %d\n", resp.StatusCode)
+				return
+			}
+		}
+	}
+	if resp != nil {
+
+		defer resp.Body.Close()
 	}
 
+	log.Printf("Body: %v\n", resp.Body)
 	r := &types.WorkResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
 		log.Println("Error decoding JSON:", err)
@@ -139,5 +166,27 @@ func main() {
 
 	log.Printf("Deleting work log %s\n", id)
 	DeleteWorkLog(id, baseUri)
+
+	// ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+
+	// defer cancel()
+
+	// ch := make(chan string)
+
+	// topic := "worklog"
+	// go events.EventStream(ctx, "http://localhost:8090", ch, topic)
+
+	// for {
+	// 	select {
+	// 	case <-ctx.Done():
+	// 		log.Println("Timeout")
+	// 		return
+	// 	case e := <-ch:
+	// 		log.Println(e)
+	// 	default:
+	// 		//
+
+	// 	}
+	// }
 
 }

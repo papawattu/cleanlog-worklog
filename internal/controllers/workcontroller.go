@@ -50,7 +50,7 @@ func (wc *WorkController) PostRequest(ctx context.Context) func(http.ResponseWri
 			return
 		}
 
-		workID, err := wc.workService.CreateWorkLog(t.Description, startDate)
+		workID, err := wc.workService.CreateWorkLog(ctx, t.Description, startDate)
 		if err != nil {
 			log.Fatalf("Error starting work: %v", err)
 		}
@@ -78,7 +78,7 @@ func (wc *WorkController) GetRequestById(ctx context.Context) func(http.Response
 
 		log.Printf("Getting work log by id %d", id)
 
-		work, err := wc.workService.GetWorkLog(id)
+		work, err := wc.workService.GetWorkLog(ctx, id)
 		if err != nil {
 			http.Error(w, "Error getting work", http.StatusNotFound)
 			return
@@ -144,7 +144,7 @@ func (wc *WorkController) GetRequestAll(ctx context.Context) func(http.ResponseW
 
 		// TODO: Implement user id
 
-		workLogs, err := wc.workService.GetAllWorkLog(0)
+		workLogs, err := wc.workService.GetAllWorkLog(ctx, 0)
 		if err != nil {
 			http.Error(w, "Error getting work logs", http.StatusNotFound)
 			return
@@ -186,7 +186,7 @@ func (wc *WorkController) DeleteRequest(ctx context.Context) func(http.ResponseW
 
 		log.Printf("Deleting work log by id %d", id)
 
-		err = wc.workService.DeleteWorkLog(id)
+		err = wc.workService.DeleteWorkLog(ctx, id)
 		if err != nil {
 			http.Error(w, "Error deleting work", http.StatusNotFound)
 			return

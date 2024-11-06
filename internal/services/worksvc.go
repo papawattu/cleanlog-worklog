@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"log"
 	"math/rand"
@@ -11,28 +12,26 @@ import (
 )
 
 type WorkService interface {
-	CreateWorkLog(description string, date time.Time) (int, error)
+	CreateWorkLog(ctx context.Context, description string, date time.Time) (int, error)
 
-	//	LogWork(id int, t Task) error
+	DeleteWorkLog(ctx context.Context, id int) error
 
-	DeleteWorkLog(id int) error
+	GetWorkLog(ctx context.Context, id int) (*models.WorkLog, error)
 
-	GetWorkLog(id int) (*models.WorkLog, error)
+	GetAllWorkLog(ctx context.Context, user int) ([]*models.WorkLog, error)
 
-	GetAllWorkLog(user int) ([]*models.WorkLog, error)
-
-	UpdateWorkLog(id int, description string, date time.Time) error
+	UpdateWorkLog(ctx context.Context, id int, description string, date time.Time) error
 }
 
 type WorkServiceImp struct {
-	repo repo.WorkLogRepository
+	repo repo.Repository[*models.WorkLog, int]
 }
 
 func nextId() int {
 	return rand.Intn(1000)
 }
 
-func (wsi *WorkServiceImp) CreateWorkLog(description string, date time.Time) (int, error) {
+func (wsi *WorkServiceImp) CreateWorkLog(ctx context.Context, description string, date time.Time) (int, error) {
 
 	wl, err := models.NewWorkLog(description, date)
 	if err != nil {
@@ -43,7 +42,7 @@ func (wsi *WorkServiceImp) CreateWorkLog(description string, date time.Time) (in
 	nextId := nextId()
 	wl.WorkLogID = &nextId
 
-	err = wsi.repo.SaveWorkLog(&wl)
+	err = wsi.repo.Save(ctx, &wl)
 	if err != nil {
 		log.Fatalf("Error saving work log: %v", err)
 		return 0, err
@@ -51,9 +50,9 @@ func (wsi *WorkServiceImp) CreateWorkLog(description string, date time.Time) (in
 	return nextId, nil
 }
 
-func (wsi *WorkServiceImp) LogWork(id int, t models.Task) error {
+func (wsi *WorkServiceImp) LogWork(ctx context.Context, id int, t models.Task) error {
 
-	wl, err := wsi.repo.GetWorkLog(id)
+	wl, err := wsi.repo.Get(ctx, id)
 	if err != nil {
 		log.Fatalf("Error getting work log: %v", err)
 		return err
@@ -68,9 +67,9 @@ func (wsi *WorkServiceImp) LogWork(id int, t models.Task) error {
 	return nil
 }
 
-func (wsi *WorkServiceImp) DeleteWorkLog(id int) error {
+func (wsi *WorkServiceImp) DeleteWorkLog(ctx context.Context, id int) error {
 
-	wl, err := wsi.repo.GetWorkLog(id)
+	wl, err := wsi.repo.Get(ctx, id)
 	if err != nil {
 		log.Fatalf("Error getting work log: %v", err)
 		return err
@@ -86,7 +85,7 @@ func (wsi *WorkServiceImp) DeleteWorkLog(id int) error {
 		return err
 	}
 
-	err = wsi.repo.DeleteWorkLog(id)
+	err = wsi.repo.Delete(ctx, id)
 	if err != nil {
 		log.Fatalf("Error deleting work log: %v", err)
 		return err
@@ -94,9 +93,9 @@ func (wsi *WorkServiceImp) DeleteWorkLog(id int) error {
 	return nil
 }
 
-func (wsi *WorkServiceImp) GetWorkLog(id int) (*models.WorkLog, error) {
+func (wsi *WorkServiceImp) GetWorkLog(ctx context.Context, id int) (*models.WorkLog, error) {
 
-	wl, err := wsi.repo.GetWorkLog(id)
+	wl, err := wsi.repo.Get(ctx, id)
 
 	if err != nil {
 		log.Fatalf("Error getting work log: %v", err)
@@ -105,9 +104,9 @@ func (wsi *WorkServiceImp) GetWorkLog(id int) (*models.WorkLog, error) {
 
 	return wl, nil
 }
-func (wsi *WorkServiceImp) GetAllWorkLog(user int) ([]*models.WorkLog, error) {
+func (wsi *WorkServiceImp) GetAllWorkLog(ctx context.Context, user int) ([]*models.WorkLog, error) {
 
-	wls, err := wsi.repo.GetAllWorkLogsForUser(user)
+	wls, err := wsi.repo.GetAll(ctx)
 
 	if err != nil {
 		log.Fatalf("Error getting work log: %v", err)
@@ -117,9 +116,9 @@ func (wsi *WorkServiceImp) GetAllWorkLog(user int) ([]*models.WorkLog, error) {
 	return wls, nil
 }
 
-func (wsi *WorkServiceImp) UpdateWorkLog(id int, description string, date time.Time) error {
+func (wsi *WorkServiceImp) UpdateWorkLog(ctx context.Context, id int, description string, date time.Time) error {
 
-	wl, err := wsi.repo.GetWorkLog(id)
+	wl, err := wsi.repo.Get(ctx, id)
 	if err != nil {
 		log.Fatalf("Error getting work log: %v", err)
 		return err
@@ -128,7 +127,7 @@ func (wsi *WorkServiceImp) UpdateWorkLog(id int, description string, date time.T
 	wl.WorkLogDescription = description
 	wl.WorkLogDate = date
 
-	err = wsi.repo.SaveWorkLog(wl)
+	err = wsi.repo.Save(ctx, wl)
 	if err != nil {
 		log.Fatalf("Error updating work log: %v", err)
 		return err
@@ -136,7 +135,7 @@ func (wsi *WorkServiceImp) UpdateWorkLog(id int, description string, date time.T
 
 	return nil
 }
-func NewWorkService(repo repo.WorkLogRepository) WorkService {
+func NewWorkService(repo repo.Repository[*models.WorkLog, int]) WorkService {
 
 	return &WorkServiceImp{
 		repo: repo,

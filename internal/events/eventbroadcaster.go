@@ -2,6 +2,7 @@ package events
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	utils "github.com/papawattu/cleanlog-worklog/internal"
 	"github.com/papawattu/cleanlog-worklog/internal/models"
 	"github.com/papawattu/cleanlog-worklog/internal/repo"
 )
@@ -21,7 +23,7 @@ const (
 )
 
 type EventBroadcaster struct {
-	repo         repo.WorkLogRepository
+	repo         repo.Repository[*models.WorkLog, int]
 	broadcastUri string
 }
 
@@ -40,20 +42,30 @@ func (eb *EventBroadcaster) postEvent(event Event) error {
 		return err
 	}
 
-	r, err := http.Post(eb.broadcastUri, "application/json", bytes.NewBuffer(ev))
+	client := utils.NewRetryableClient(10)
+
+	r, err := http.NewRequest("POST", eb.broadcastUri, bytes.NewBuffer(ev))
 
 	if err != nil {
 		return err
 	}
 
-	if r.StatusCode != http.StatusCreated {
-		return fmt.Errorf("Error: status code %d", r.StatusCode)
+	r.Header.Add("Content-Type", "application/json")
+
+	resp, err := client.Do(r)
+
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("Error: status code %d", resp.StatusCode)
 	}
 
 	return nil
 }
 
-func (eb *EventBroadcaster) SaveWorkLog(wl *models.WorkLog) error {
+func (eb *EventBroadcaster) Save(ctx context.Context, wl *models.WorkLog) error {
 
 	wlj, err := json.Marshal(wl)
 
@@ -80,32 +92,32 @@ func (eb *EventBroadcaster) SaveWorkLog(wl *models.WorkLog) error {
 		return err
 	}
 
-	err = eb.repo.SaveWorkLog(wl)
+	// err = eb.repo.SaveWorkLog(wl)
 
-	if err != nil {
+	// if err != nil {
 
-		err := eb.DeleteWorkLog(*wl.WorkLogID)
-		if err != nil {
-			log.Panicf("Error saving work log: %v published rollback event", err)
-		}
-		log.Printf("Error saving work log: %v published rollback event", err)
-		return err
-	}
+	// 	err := eb.DeleteWorkLog(*wl.WorkLogID)
+	// 	if err != nil {
+	// 		log.Panicf("Error saving work log: %v published rollback event", err)
+	// 	}
+	// 	log.Printf("Error saving work log: %v published rollback event", err)
+	// 	return err
+	// }
 
 	return nil //
 }
 
-func (eb *EventBroadcaster) GetWorkLog(id int) (*models.WorkLog, error) {
-	return eb.repo.GetWorkLog(id)
+func (eb *EventBroadcaster) Get(ctx context.Context, id int) (*models.WorkLog, error) {
+	return eb.repo.Get(ctx, id)
 }
 
-func (eb *EventBroadcaster) GetAllWorkLogsForUser(userID int) ([]*models.WorkLog, error) {
-	return eb.repo.GetAllWorkLogsForUser(userID)
+func (eb *EventBroadcaster) GetAll(ctx context.Context) ([]*models.WorkLog, error) {
+	return eb.repo.GetAll(ctx)
 }
 
-func (eb *EventBroadcaster) DeleteWorkLog(id int) error {
+func (eb *EventBroadcaster) Delete(ctx context.Context, id int) error {
 
-	wl, err := eb.repo.GetWorkLog(id)
+	wl, err := eb.repo.Get(ctx, id)
 
 	if err != nil {
 		return err
@@ -136,12 +148,80 @@ func (eb *EventBroadcaster) DeleteWorkLog(id int) error {
 		return err
 	}
 
-	return eb.repo.DeleteWorkLog(id)
+	return nil // eb.repo.DeleteWorkLog(id)
 }
 
-func NewEventBroadcaster(repo repo.WorkLogRepository, baseUri string, topic string) *EventBroadcaster {
+func NewEventBroadcaster(ctx context.Context, repo repo.Repository[*models.WorkLog, int], broadcastUri string, streamUri, topic string) *EventBroadcaster {
+
+	es := make(chan string)
+
+	go EventStream(ctx, streamUri, es, topic)
+
+	go func() {
+		sha := make(map[string]string)
+
+		for {
+			ev := <-es
+			if ev == "" {
+				log.Printf("Received empty event %+v", es)
+				continue
+			}
+			if ev == "Error connecting to event stream" {
+				log.Printf("Error connecting to event stream")
+			}
+
+			log.Printf("Received event: %s", ev)
+
+			event := decodeEvent(ev)
+
+			if _, ok := sha[event.EventSHA]; ok {
+				log.Printf("Skipping event %s", event.EventSHA)
+				continue
+			}
+
+			sha[event.EventSHA] = ev
+
+			switch event.EventType {
+			case WorkLogCreated:
+				log.Printf("Received work log created event %v", event.EventData)
+				wl := decodeWorkLog(event.EventData)
+				err := repo.Save(ctx, wl)
+				log.Printf("Saved work log %v", wl)
+				if err != nil {
+					log.Printf("Error saving work log: %v", err)
+				}
+			case WorkLogDeleted:
+				wl := decodeWorkLog(event.EventData)
+				err := repo.Delete(ctx, *wl.WorkLogID)
+
+				if err != nil {
+					log.Printf("Error deleting work log: %v", err)
+				}
+			}
+		}
+
+	}()
+
 	return &EventBroadcaster{
 		repo:         repo,
-		broadcastUri: baseUri + "/event/" + topic,
+		broadcastUri: broadcastUri + "/event/" + topic,
 	}
+}
+
+func decodeWorkLog(data string) *models.WorkLog {
+	var wl models.WorkLog
+	err := json.Unmarshal([]byte(data), &wl)
+	if err != nil {
+		log.Fatalf("Error decoding work log: %v", err)
+	}
+	return &wl
+}
+
+func decodeEvent(ev string) Event {
+	var event Event
+	err := json.Unmarshal([]byte(ev), &event)
+	if err != nil {
+		log.Fatalf("Error decoding event: %s : %v", ev, err)
+	}
+	return event
 }
