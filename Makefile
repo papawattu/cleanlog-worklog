@@ -24,6 +24,9 @@ docker-build:
 	@docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/papawattu/cleanlog-worklog:latest .
 
 test:
+	@go test -v ./...
+
+coverage:
 	@go test -v ./... -coverprofile=tmp/coverage.out
 	@go tool cover -html=tmp/coverage.out -o tmp/coverage.html
 	@rm tmp/coverage.out

@@ -48,12 +48,17 @@ func (wri *InMemoryWorkLogRepository) GetAll(ctx context.Context) ([]*models.Wor
 	return workLogs, nil
 }
 
-func (wri *InMemoryWorkLogRepository) Delete(ctx context.Context, id int) error {
-	if _, ok := wri.WorkLogs[id]; !ok {
-		log.Printf("Work log with ID %d not found", id)
-		return errors.New("work log not found " + strconv.Itoa(id))
+func (wri *InMemoryWorkLogRepository) Delete(ctx context.Context, wl *models.WorkLog) error {
+
+	if wl.WorkLogID == nil {
+		return errors.New("work log ID is required")
 	}
-	delete(wri.WorkLogs, id)
+
+	if _, ok := wri.WorkLogs[*wl.WorkLogID]; !ok {
+		log.Printf("Work log with ID %d not found", *wl.WorkLogID)
+		return errors.New("work log not found " + strconv.Itoa(*wl.WorkLogID))
+	}
+	delete(wri.WorkLogs, *wl.WorkLogID)
 	return nil
 }
 func NewWorkLogRepository() Repository[*models.WorkLog, int] {

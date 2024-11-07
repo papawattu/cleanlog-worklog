@@ -24,6 +24,7 @@ type WorkService interface {
 }
 
 type WorkServiceImp struct {
+	ctx  context.Context
 	repo repo.Repository[*models.WorkLog, int]
 }
 
@@ -85,7 +86,7 @@ func (wsi *WorkServiceImp) DeleteWorkLog(ctx context.Context, id int) error {
 		return err
 	}
 
-	err = wsi.repo.Delete(ctx, id)
+	err = wsi.repo.Delete(ctx, wl)
 	if err != nil {
 		log.Fatalf("Error deleting work log: %v", err)
 		return err
@@ -135,9 +136,10 @@ func (wsi *WorkServiceImp) UpdateWorkLog(ctx context.Context, id int, descriptio
 
 	return nil
 }
-func NewWorkService(repo repo.Repository[*models.WorkLog, int]) WorkService {
+func NewWorkService(ctx context.Context, repo repo.Repository[*models.WorkLog, int]) WorkService {
 
 	return &WorkServiceImp{
+		ctx:  ctx,
 		repo: repo,
 	}
 }

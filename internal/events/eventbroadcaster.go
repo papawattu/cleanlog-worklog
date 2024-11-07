@@ -11,7 +11,6 @@ import (
 	"time"
 
 	utils "github.com/papawattu/cleanlog-worklog/internal"
-	"github.com/papawattu/cleanlog-worklog/internal/models"
 	"github.com/papawattu/cleanlog-worklog/internal/repo"
 )
 
@@ -22,8 +21,8 @@ const (
 	EventVersion   = 1
 )
 
-type EventBroadcaster struct {
-	repo         repo.Repository[*models.WorkLog, int]
+type EventBroadcaster[T any, S comparable] struct {
+	repo         repo.Repository[T, S]
 	broadcastUri string
 }
 
@@ -35,7 +34,7 @@ type Event struct {
 	EventData    string    `json:"eventData"`
 }
 
-func (eb *EventBroadcaster) postEvent(event Event) error {
+func (eb *EventBroadcaster[T, S]) postEvent(event Event) error {
 
 	ev, err := json.Marshal(event)
 	if err != nil {
@@ -65,9 +64,9 @@ func (eb *EventBroadcaster) postEvent(event Event) error {
 	return nil
 }
 
-func (eb *EventBroadcaster) Save(ctx context.Context, wl *models.WorkLog) error {
+func (eb *EventBroadcaster[T, S]) Save(ctx context.Context, e T) error {
 
-	wlj, err := json.Marshal(wl)
+	ent, err := json.Marshal(e)
 
 	if err != nil {
 		return err
@@ -75,7 +74,7 @@ func (eb *EventBroadcaster) Save(ctx context.Context, wl *models.WorkLog) error 
 
 	h := sha256.New()
 
-	h.Write([]byte(wlj))
+	h.Write([]byte(ent))
 
 	// Broadcast event
 	event := Event{
@@ -83,7 +82,7 @@ func (eb *EventBroadcaster) Save(ctx context.Context, wl *models.WorkLog) error 
 		EventTime:    time.Now(),
 		EventVersion: EventVersion,
 		EventSHA:     fmt.Sprintf("%x", h.Sum(nil)),
-		EventData:    string(wlj),
+		EventData:    string(ent),
 	}
 
 	err = eb.postEvent(event)
@@ -107,23 +106,17 @@ func (eb *EventBroadcaster) Save(ctx context.Context, wl *models.WorkLog) error 
 	return nil //
 }
 
-func (eb *EventBroadcaster) Get(ctx context.Context, id int) (*models.WorkLog, error) {
+func (eb *EventBroadcaster[T, S]) Get(ctx context.Context, id S) (T, error) {
 	return eb.repo.Get(ctx, id)
 }
 
-func (eb *EventBroadcaster) GetAll(ctx context.Context) ([]*models.WorkLog, error) {
+func (eb *EventBroadcaster[T, S]) GetAll(ctx context.Context) ([]T, error) {
 	return eb.repo.GetAll(ctx)
 }
 
-func (eb *EventBroadcaster) Delete(ctx context.Context, id int) error {
+func (eb *EventBroadcaster[T, S]) Delete(ctx context.Context, e T) error {
 
-	wl, err := eb.repo.Get(ctx, id)
-
-	if err != nil {
-		return err
-	}
-
-	wlj, err := json.Marshal(wl)
+	wlj, err := json.Marshal(e)
 
 	if err != nil {
 		return err
@@ -151,7 +144,7 @@ func (eb *EventBroadcaster) Delete(ctx context.Context, id int) error {
 	return nil // eb.repo.DeleteWorkLog(id)
 }
 
-func NewEventBroadcaster(ctx context.Context, repo repo.Repository[*models.WorkLog, int], broadcastUri string, streamUri, topic string) *EventBroadcaster {
+func NewEventBroadcaster[T any, S comparable](ctx context.Context, repo repo.Repository[T, S], broadcastUri string, streamUri, topic string) *EventBroadcaster[T, S] {
 
 	es := make(chan string)
 
@@ -184,15 +177,15 @@ func NewEventBroadcaster(ctx context.Context, repo repo.Repository[*models.WorkL
 			switch event.EventType {
 			case WorkLogCreated:
 				log.Printf("Received work log created event %v", event.EventData)
-				wl := decodeWorkLog(event.EventData)
+				wl := decodeWorkLog[T](event.EventData)
 				err := repo.Save(ctx, wl)
 				log.Printf("Saved work log %v", wl)
 				if err != nil {
 					log.Printf("Error saving work log: %v", err)
 				}
 			case WorkLogDeleted:
-				wl := decodeWorkLog(event.EventData)
-				err := repo.Delete(ctx, *wl.WorkLogID)
+				e := decodeWorkLog[T](event.EventData)
+				err := repo.Delete(ctx, e)
 
 				if err != nil {
 					log.Printf("Error deleting work log: %v", err)
@@ -202,19 +195,19 @@ func NewEventBroadcaster(ctx context.Context, repo repo.Repository[*models.WorkL
 
 	}()
 
-	return &EventBroadcaster{
+	return &EventBroadcaster[T, S]{
 		repo:         repo,
 		broadcastUri: broadcastUri + "/event/" + topic,
 	}
 }
 
-func decodeWorkLog(data string) *models.WorkLog {
-	var wl models.WorkLog
+func decodeWorkLog[T any](data string) T {
+	var wl T
 	err := json.Unmarshal([]byte(data), &wl)
 	if err != nil {
 		log.Fatalf("Error decoding work log: %v", err)
 	}
-	return &wl
+	return wl
 }
 
 func decodeEvent(ev string) Event {

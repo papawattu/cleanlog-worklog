@@ -18,7 +18,7 @@ import (
 var (
 	location    string
 	workLogRepo = repo.NewWorkLogRepository()
-	workService = services.NewWorkService(workLogRepo)
+	workService = services.NewWorkService(context.Background(), workLogRepo)
 )
 
 func TestGetController(t *testing.T) {
