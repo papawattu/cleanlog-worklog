@@ -9,7 +9,6 @@ import (
 
 	"github.com/papawattu/cleanlog-worklog/internal/controllers"
 	"github.com/papawattu/cleanlog-worklog/internal/events"
-	"github.com/papawattu/cleanlog-worklog/internal/models"
 	"github.com/papawattu/cleanlog-worklog/internal/repo"
 	"github.com/papawattu/cleanlog-worklog/internal/services"
 )
@@ -69,7 +68,7 @@ func main() {
 	if os.Getenv("EVENT_BROADCASTER") == "" || os.Getenv("EVENT_STREAM") == "" {
 		workService = services.NewWorkService(ctx, repo.NewWorkLogRepository())
 	} else {
-		eventBroadcaster := events.NewEventBroadcaster[*models.WorkLog, int](ctx, repo.NewWorkLogRepository(), os.Getenv("EVENT_BROADCASTER"), os.Getenv("EVENT_STREAM"), topic)
+		eventBroadcaster := events.NewEventBroadcaster(ctx, repo.NewWorkLogRepository(), os.Getenv("EVENT_BROADCASTER"), os.Getenv("EVENT_STREAM"), topic)
 		workService = services.NewWorkService(ctx, eventBroadcaster)
 	}
 
