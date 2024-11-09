@@ -61,7 +61,7 @@ func GetWorkLog(loc string, baseUri string) {
 		}
 
 		if resp.StatusCode == http.StatusNotFound {
-			if count > 5 {
+			if count > 20 {
 				log.Fatalln("Work log not found")
 				return
 			}

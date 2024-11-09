@@ -9,37 +9,27 @@ import (
 
 	"github.com/papawattu/cleanlog-worklog/internal/controllers"
 	"github.com/papawattu/cleanlog-worklog/internal/events"
+	"github.com/papawattu/cleanlog-worklog/internal/middleware"
 	"github.com/papawattu/cleanlog-worklog/internal/repo"
 	"github.com/papawattu/cleanlog-worklog/internal/services"
 )
 
-func startWebServer(server *http.Server, ws services.WorkService) error {
+func startWebServer(port string, ws services.WorkService) error {
+	stack := middleware.CreateMiddleware(middleware.Logging)
 
-	// make a middleware array
+	router := http.NewServeMux()
 
-	// middleware := []func(http.Handler) http.Handler{
-	// 	func(next http.Handler) http.Handler {
-	// 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 			log.Printf("Request received: %s %s\n", r.Method, r.URL)
-	// 			next.ServeHTTP(w, r)
-	// 			log.Printf("Request completed: %s %s\n", r.Method, r.URL)
-	// 		})
-	// 	},
-	// }
+	api := http.NewServeMux()
+	api.Handle("/api/", http.StripPrefix("/api", router))
 
-	middleware := []func(http.Handler) http.Handler{
-		func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				log.Printf("Request received: %s %s\n", r.Method, r.URL)
-				next.ServeHTTP(w, r)
-				log.Printf("Request completed: %s %s\n", r.Method, r.URL)
-			})
-		},
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: stack(api),
 	}
-	controllers.NewWorkController(context.Background(), server.Handler.(*http.ServeMux), ws, middleware)
 
-	log.Printf("Starting Work Log server on port %s\n", server.Addr)
+	controllers.NewWorkController(context.Background(), router, ws)
 
+	log.Printf("Starting Work Log server on port %s\n", port)
 	return server.ListenAndServe()
 
 }
@@ -50,7 +40,6 @@ func main() {
 	var (
 		workService services.WorkService
 		port        string
-		server      *http.Server
 	)
 
 	port = "3000"
@@ -72,12 +61,7 @@ func main() {
 		workService = services.NewWorkService(ctx, eventBroadcaster)
 	}
 
-	server = &http.Server{
-		Addr:    fmt.Sprintf(":%s", port),
-		Handler: http.NewServeMux(),
-	}
-
-	if err := startWebServer(server, workService); err != nil {
+	if err := startWebServer(port, workService); err != nil {
 		log.Fatal(err)
 	}
 

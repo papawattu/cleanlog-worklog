@@ -196,16 +196,15 @@ func (wc *WorkController) DeleteRequest(ctx context.Context) func(http.ResponseW
 	}
 }
 func NewWorkController(ctx context.Context, server *http.ServeMux,
-	workService services.WorkService,
-	middleware []func(http.Handler) http.Handler) *WorkController {
+	workService services.WorkService) *WorkController {
 
 	wc := &WorkController{
 		workService: workService,
 		controllers: ControllerPaths{
-			"POST /api/worklog":            (*WorkController).PostRequest,
-			"GET /api/worklog/{workid}":    (*WorkController).GetRequestById,
-			"GET /api/worklog/":            (*WorkController).GetRequestAll,
-			"DELETE /api/worklog/{workid}": (*WorkController).DeleteRequest,
+			"POST /worklog":            (*WorkController).PostRequest,
+			"GET /worklog/{workid}":    (*WorkController).GetRequestById,
+			"GET /worklog/":            (*WorkController).GetRequestAll,
+			"DELETE /worklog/{workid}": (*WorkController).DeleteRequest,
 		},
 	}
 

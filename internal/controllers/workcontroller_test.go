@@ -23,7 +23,7 @@ var (
 
 func TestGetController(t *testing.T) {
 
-	controllers := NewWorkController(context.Background(), http.NewServeMux(), workService, nil)
+	controllers := NewWorkController(context.Background(), http.NewServeMux(), workService)
 
 	server := httptest.NewServer(controllers.server)
 
@@ -45,7 +45,7 @@ func TestGetController(t *testing.T) {
 
 func TestCreateWorkLogController(t *testing.T) {
 
-	controllers := NewWorkController(context.Background(), http.NewServeMux(), workService, nil)
+	controllers := NewWorkController(context.Background(), http.NewServeMux(), workService)
 
 	server := httptest.NewServer(controllers.server)
 
@@ -80,7 +80,7 @@ func TestGetWorkLogController(t *testing.T) {
 		t.Skip("Skipping TestGetWorkLogController because location is not set")
 	}
 
-	controllers := NewWorkController(context.Background(), http.NewServeMux(), workService, nil)
+	controllers := NewWorkController(context.Background(), http.NewServeMux(), workService)
 
 	server := httptest.NewServer(controllers.server)
 

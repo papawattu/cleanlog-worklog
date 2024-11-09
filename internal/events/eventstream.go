@@ -11,6 +11,8 @@ import (
 )
 
 func EventStream(ctx context.Context, baseUri string, es chan string, topic string) {
+	lastId := ""
+
 	for {
 		client := utils.NewRetryableClient(10)
 
@@ -22,6 +24,7 @@ func EventStream(ctx context.Context, baseUri string, es chan string, topic stri
 
 		req.Header.Set("Accept", "text/event-stream")
 		req.Header.Set("Cache-Control", "no-cache")
+		req.Header.Set("Last-Event-ID", lastId)
 
 		resp, err := client.Do(req)
 		if err != nil {
@@ -58,14 +61,21 @@ func EventStream(ctx context.Context, baseUri string, es chan string, topic stri
 					break
 				}
 
-				if !strings.HasPrefix(e, "data: ") {
-					log.Fatalf("Error: unexpected event %s", e)
-					running = false
-					break
+				switch {
+				case strings.HasPrefix(e, "event: "):
+					log.Printf("Event: %s\n", strings.TrimLeft(e, "event: "))
+				case strings.HasPrefix(e, "data: "):
+					log.Printf("Data: %s\n", strings.TrimLeft(e, "data: "))
+					es <- strings.TrimLeft(e, "data: ")
+				case strings.HasPrefix(e, "id: "):
+					log.Printf("Id: %s\n", strings.TrimLeft(e, "id: "))
+					//scanner.Scan()
+					//scanner.Text()
+					lastId = strings.TrimLeft(e, "id: ")
+				default:
+					log.Printf("Unknown: %s\n", e)
 				}
-				es <- strings.TrimLeft(e, "data: ")
 			}
 		}
 	}
-
 }

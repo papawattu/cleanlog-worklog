@@ -33,3 +33,5 @@ go-build/
 /bin/*
 
 /tmp/*
+
+coverage.html
