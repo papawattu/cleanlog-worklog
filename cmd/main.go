@@ -58,10 +58,10 @@ func main() {
 		topic = os.Getenv("EVENT_TOPIC")
 	}
 
-	if os.Getenv("EVENT_BROADCASTER") == "" || os.Getenv("EVENT_STREAM") == "" {
+	if os.Getenv("EVENT_STORE") == "" || os.Getenv("EVENT_STREAM") == "" {
 		workService = services.NewWorkService(ctx, repo.NewWorkLogRepository())
 	} else {
-		eventBroadcaster := events.NewEventBroadcaster(ctx, repo.NewWorkLogRepository(), os.Getenv("EVENT_BROADCASTER"), os.Getenv("EVENT_STREAM"), topic)
+		eventBroadcaster := events.NewEventBroadcaster(ctx, repo.NewWorkLogRepository(), os.Getenv("EVENT_STORE"), os.Getenv("EVENT_STREAM"), topic)
 		workService = services.NewWorkService(ctx, eventBroadcaster)
 	}
 
