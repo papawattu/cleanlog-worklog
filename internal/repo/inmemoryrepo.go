@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -19,12 +20,14 @@ func (wri *InMemoryWorkLogRepository) Save(ctx context.Context, wl *models.WorkL
 		return errors.New("work log ID is required")
 	}
 
-	if _, ok := wri.WorkLogs[*wl.WorkLogID]; ok {
-		return errors.New("work log already exists")
-	}
+	// if _, ok := wri.WorkLogs[*wl.WorkLogID]; ok {
+	// 	return errors.New("work log already exists")
+	// }
 
 	wl.LastUpdateDate = time.Now()
 	wri.WorkLogs[*wl.WorkLogID] = wl
+
+	log.Printf("Work log saved: %v", wl)
 	return nil
 }
 
@@ -37,7 +40,10 @@ func (wri *InMemoryWorkLogRepository) Get(ctx context.Context, id int) (*models.
 }
 
 func (wri *InMemoryWorkLogRepository) GetAll(ctx context.Context) ([]*models.WorkLog, error) {
-	userID := ctx.Value("userID")
+	userID, ok := ctx.Value("user").(int)
+	if !ok {
+		return nil, errors.New("user ID not found in context")
+	}
 
 	workLogs := []*models.WorkLog{}
 	for _, wl := range wri.WorkLogs {
@@ -55,7 +61,7 @@ func (wri *InMemoryWorkLogRepository) Delete(ctx context.Context, wl *models.Wor
 	}
 
 	if _, ok := wri.WorkLogs[*wl.WorkLogID]; !ok {
-		log.Printf("Work log with ID %d not found", *wl.WorkLogID)
+		slog.Error("Work log with ID %s not found", strconv.Itoa(*wl.WorkLogID), nil)
 		return errors.New("work log not found " + strconv.Itoa(*wl.WorkLogID))
 	}
 	delete(wri.WorkLogs, *wl.WorkLogID)

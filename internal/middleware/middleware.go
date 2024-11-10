@@ -1,7 +1,8 @@
 package middleware
 
 import (
-	"log"
+	"context"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -32,6 +33,41 @@ func Logging(next http.Handler) http.Handler {
 		wrapped := &wrappedResponseWriter{w, http.StatusOK}
 
 		next.ServeHTTP(wrapped, r)
-		log.Printf("Request: %s %s processed in %s : Status code %d", r.Method, r.URL.Path, time.Since(start), wrapped.statusCode)
+
+		userId := r.Context().Value("user")
+
+		if userId == nil {
+			slog.Info("Request", "Method", r.Method, "URL", r.URL.Path, slog.Duration("Taken", time.Since(start)), "Status", wrapped.statusCode, slog.String("User", "Anonymous"))
+		} else {
+			slog.Info("Request", "Method", r.Method, "URL", r.URL.Path, slog.Duration("Taken", time.Since(start)), "Status", wrapped.statusCode, slog.Int("User", userId.(int)))
+		}
+
+	})
+}
+func Recover(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				slog.Error("Recovered from panic", "Error", err)
+				http.Error(w, "Internal server error", http.StatusInternalServerError)
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+func Authenticated(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		token := r.Header.Get("Authorization")
+		if token != "Bearer mytoken" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, "user", 0)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
 	})
 }

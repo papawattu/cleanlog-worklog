@@ -23,6 +23,9 @@ watch:
 docker-build:
 	@docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/papawattu/cleanlog-worklog:latest .
 
+docker-push: docker-build
+	@docker push ghcr.io/papawattu/cleanlog-worklog:latest
+
 test:
 	@go test -v ./...
 

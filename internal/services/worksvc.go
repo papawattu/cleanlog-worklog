@@ -20,7 +20,7 @@ type WorkService interface {
 
 	GetAllWorkLog(ctx context.Context, user int) ([]*models.WorkLog, error)
 
-	UpdateWorkLog(ctx context.Context, id int, description string, date time.Time) error
+	UpdateWorkLog(ctx context.Context, id int, description string, date time.Time, taskIds []int) error
 }
 
 type WorkServiceImp struct {
@@ -117,7 +117,7 @@ func (wsi *WorkServiceImp) GetAllWorkLog(ctx context.Context, user int) ([]*mode
 	return wls, nil
 }
 
-func (wsi *WorkServiceImp) UpdateWorkLog(ctx context.Context, id int, description string, date time.Time) error {
+func (wsi *WorkServiceImp) UpdateWorkLog(ctx context.Context, id int, description string, date time.Time, taskIds []int) error {
 
 	wl, err := wsi.repo.Get(ctx, id)
 	if err != nil {
@@ -125,8 +125,29 @@ func (wsi *WorkServiceImp) UpdateWorkLog(ctx context.Context, id int, descriptio
 		return err
 	}
 
-	wl.WorkLogDescription = description
-	wl.WorkLogDate = date
+	if wl == nil {
+		return errors.New("Work log not found")
+	}
+
+	if description != "" {
+		wl.WorkLogDescription = description
+	}
+
+	if date != (time.Time{}) {
+		wl.WorkLogDate = date
+	}
+
+	for _, taskId := range taskIds {
+		err = wl.AddTask(models.Task{TaskID: taskId})
+		if err != nil {
+			log.Fatalf("Error updating tasks: %v", err)
+			return err
+		}
+	}
+	if err != nil {
+		log.Fatalf("Error updating tasks: %v", err)
+		return err
+	}
 
 	err = wsi.repo.Save(ctx, wl)
 	if err != nil {

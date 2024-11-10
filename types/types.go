@@ -20,3 +20,9 @@ type CreateWorkResponse struct {
 type ListWorkResponse struct {
 	WorkResponses []WorkResponse `json:"worklogs"`
 }
+
+type UpdateWorkRequest struct {
+	Description string `json:"description"`
+	Date        string `json:"date"`
+	TaskIds     []int  `json:"taskIds"`
+}

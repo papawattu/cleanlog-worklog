@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -38,7 +39,7 @@ func inlineTasks(tasks []models.Task) []int {
 func (wc *WorkController) PostRequest(ctx context.Context) func(http.ResponseWriter, *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Creating work log")
+		slog.Debug("Creating work log")
 		var t types.CreateWorkRequest
 
 		json.NewDecoder(r.Body).Decode(&t)
@@ -46,13 +47,14 @@ func (wc *WorkController) PostRequest(ctx context.Context) func(http.ResponseWri
 		startDate, err := time.Parse("2006-01-02", t.Date)
 
 		if err != nil {
+			slog.Error("Invalid date format %v", err)
 			http.Error(w, "Invalid date format", http.StatusBadRequest)
 			return
 		}
 
 		workID, err := wc.workService.CreateWorkLog(ctx, t.Description, startDate)
 		if err != nil {
-			log.Fatalf("Error starting work: %v", err)
+			slog.Error("Error starting work: %v", err)
 		}
 
 		w.Header().Set("Location", "/api/worklog/"+strconv.Itoa(workID))
@@ -61,8 +63,51 @@ func (wc *WorkController) PostRequest(ctx context.Context) func(http.ResponseWri
 
 }
 
+func (wc *WorkController) PatchRequest(ctx context.Context) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		workId := r.PathValue("workid")
+		if workId == "" {
+			http.Error(w, "workId is required", http.StatusBadRequest)
+			return
+		}
+
+		id, err := strconv.Atoi(workId)
+		if err != nil {
+			http.Error(w, "workId must be an integer", http.StatusBadRequest)
+			return
+		}
+
+		slog.Debug("Updating work log by id", slog.Int("id", id))
+
+		var t types.UpdateWorkRequest
+
+		json.NewDecoder(r.Body).Decode(&t)
+
+		var startDate time.Time
+		if t.Date != "" {
+			startDate, err = time.Parse("2006-01-02", t.Date)
+
+			if err != nil {
+				slog.Error("Invalid date format", "Date", t.Date)
+				http.Error(w, "Invalid date format", http.StatusBadRequest)
+				return
+			}
+		}
+
+		err = wc.workService.UpdateWorkLog(ctx, id, t.Description, startDate, t.TaskIds)
+		if err != nil {
+			http.Error(w, "Error updating work", http.StatusNotFound)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
 func (wc *WorkController) GetRequestById(ctx context.Context) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		ctx := r.Context()
 
 		workId := r.PathValue("workid")
 		if workId == "" {
@@ -106,46 +151,20 @@ func (wc *WorkController) GetRequestById(ctx context.Context) func(http.Response
 func (wc *WorkController) GetRequestAll(ctx context.Context) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		log.Println("Getting all work logs")
-		// auth := r.Header.Get("Authorization")
-
-		// if auth == "" {
-		// 	http.Error(w, "Authorization header is required", http.StatusBadRequest)
-		// 	return
-		// }
-
-		// stringSplit := strings.Split(auth, " ")
-		// if len(stringSplit) != 2 {
-		// 	http.Error(w, "Authorization header must be in the format Basic <token>", http.StatusBadRequest)
-		// 	return
-		// }
-
-		// token := stringSplit[1]
-
-		// base64Token, err := base64.StdEncoding.DecodeString(token)
-		// if err != nil {
-		// 	http.Error(w, "Error decoding token", http.StatusBadRequest)
-		// 	return
-		// }
-
-		// tokenSplit := strings.Split(string(base64Token), ":")
-
-		// if len(tokenSplit) != 2 {
-		// 	http.Error(w, "Token must be in the format <userId>:<password>", http.StatusBadRequest)
-		// 	return
-		// }
-
-		// userId := tokenSplit[0]
-
-		// if userId == "" {
-		// 	http.Error(w, "userId is required", http.StatusBadRequest)
-		// 	return
-		// }
+		slog.Debug("Getting all work logs")
 
 		// TODO: Implement user id
 
-		workLogs, err := wc.workService.GetAllWorkLog(ctx, 0)
+		user, ok := r.Context().Value("user").(int)
+
+		if !ok {
+			slog.Error("User ID not found in context")
+			http.Error(w, "User ID not found in context", http.StatusNotFound)
+			return
+		}
+		workLogs, err := wc.workService.GetAllWorkLog(r.Context(), user)
 		if err != nil {
+			slog.Error("Error getting work logs: %v", err)
 			http.Error(w, "Error getting work logs", http.StatusNotFound)
 			return
 		}
@@ -174,17 +193,19 @@ func (wc *WorkController) DeleteRequest(ctx context.Context) func(http.ResponseW
 	return func(w http.ResponseWriter, r *http.Request) {
 		workId := r.PathValue("workid")
 		if workId == "" {
+			slog.Error("workId is required")
 			http.Error(w, "workId is required", http.StatusBadRequest)
 			return
 		}
 
 		id, err := strconv.Atoi(workId)
 		if err != nil {
+			slog.Error("workId must be an integer")
 			http.Error(w, "workId must be an integer", http.StatusBadRequest)
 			return
 		}
 
-		log.Printf("Deleting work log by id %d", id)
+		slog.Debug("Deleting work log by id", slog.Int("id", id))
 
 		err = wc.workService.DeleteWorkLog(ctx, id)
 		if err != nil {
@@ -205,6 +226,7 @@ func NewWorkController(ctx context.Context, server *http.ServeMux,
 			"GET /worklog/{workid}":    (*WorkController).GetRequestById,
 			"GET /worklog/":            (*WorkController).GetRequestAll,
 			"DELETE /worklog/{workid}": (*WorkController).DeleteRequest,
+			"PATCH /worklog/{workid}":  (*WorkController).PatchRequest,
 		},
 	}
 
@@ -214,14 +236,4 @@ func NewWorkController(ctx context.Context, server *http.ServeMux,
 
 	wc.server = server
 	return wc
-}
-
-func (wc *WorkController) Start() error {
-	log.Printf("Starting work controller")
-	return nil
-}
-
-func (wc *WorkController) Stop() error {
-	log.Printf("Stopping work controller")
-	return nil
 }

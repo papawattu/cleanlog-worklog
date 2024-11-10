@@ -15,7 +15,11 @@ import (
 )
 
 func startWebServer(port string, ws services.WorkService) error {
-	stack := middleware.CreateMiddleware(middleware.Logging)
+	stack := middleware.CreateMiddleware(
+		middleware.Recover,
+		middleware.Logging,
+		middleware.Authenticated,
+	)
 
 	router := http.NewServeMux()
 
