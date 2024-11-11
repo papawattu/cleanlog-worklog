@@ -15,15 +15,16 @@ import (
 )
 
 const (
-	WorkLogCreated = "WorkLogCreated"
-	WorkLogDeleted = "WorkLogDeleted"
-	EventUri       = "/event"
-	EventVersion   = 1
+	Created      = "Created"
+	Deleted      = "Deleted"
+	EventUri     = "/event"
+	EventVersion = 1
 )
 
 type EventBroadcaster[T any, S comparable] struct {
-	repo         repo.Repository[T, S]
-	broadcastUri string
+	repo            repo.Repository[T, S]
+	broadcastUri    string
+	eventTypePrefix string
 }
 
 type Event struct {
@@ -78,7 +79,7 @@ func (eb *EventBroadcaster[T, S]) Save(ctx context.Context, e T) error {
 
 	// Broadcast event
 	event := Event{
-		EventType:    WorkLogCreated,
+		EventType:    eb.eventTypePrefix + Created,
 		EventTime:    time.Now(),
 		EventVersion: EventVersion,
 		EventSHA:     fmt.Sprintf("%x", h.Sum(nil)),
@@ -128,7 +129,7 @@ func (eb *EventBroadcaster[T, S]) Delete(ctx context.Context, e T) error {
 
 	// Broadcast event
 	event := Event{
-		EventType:    WorkLogDeleted,
+		EventType:    eb.eventTypePrefix + Deleted,
 		EventTime:    time.Now(),
 		EventVersion: EventVersion,
 		EventSHA:     fmt.Sprintf("%x", h.Sum(nil)),
@@ -144,7 +145,7 @@ func (eb *EventBroadcaster[T, S]) Delete(ctx context.Context, e T) error {
 	return nil // eb.repo.DeleteWorkLog(id)
 }
 
-func NewEventBroadcaster[T any, S comparable](ctx context.Context, repo repo.Repository[T, S], broadcastUri string, streamUri, topic string) *EventBroadcaster[T, S] {
+func NewEventBroadcaster[T any, S comparable](ctx context.Context, repo repo.Repository[T, S], broadcastUri string, streamUri, topic string, eventTypePrefix string) *EventBroadcaster[T, S] {
 
 	es := make(chan string)
 
@@ -175,7 +176,7 @@ func NewEventBroadcaster[T any, S comparable](ctx context.Context, repo repo.Rep
 			sha[event.EventSHA] = ev
 
 			switch event.EventType {
-			case WorkLogCreated:
+			case eventTypePrefix + Created:
 				log.Printf("Received work log created event %v", event.EventData)
 				wl := decodeWorkLog[T](event.EventData)
 				err := repo.Save(ctx, wl)
@@ -183,7 +184,7 @@ func NewEventBroadcaster[T any, S comparable](ctx context.Context, repo repo.Rep
 				if err != nil {
 					log.Printf("Error saving work log: %v", err)
 				}
-			case WorkLogDeleted:
+			case eventTypePrefix + Deleted:
 				e := decodeWorkLog[T](event.EventData)
 				err := repo.Delete(ctx, e)
 
@@ -196,8 +197,9 @@ func NewEventBroadcaster[T any, S comparable](ctx context.Context, repo repo.Rep
 	}()
 
 	return &EventBroadcaster[T, S]{
-		repo:         repo,
-		broadcastUri: broadcastUri + "/event/" + topic,
+		repo:            repo,
+		broadcastUri:    broadcastUri + "/event/" + topic,
+		eventTypePrefix: eventTypePrefix,
 	}
 }
 
