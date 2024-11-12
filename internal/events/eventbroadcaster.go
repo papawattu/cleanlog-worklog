@@ -221,6 +221,13 @@ func NewEventBroadcaster[T any, S comparable](ctx context.Context, repo repo.Rep
 				if err != nil {
 					log.Printf("Error deleting work log: %v", err)
 				}
+			case eventTypePrefix + Updated:
+				wl := decodeWorkLog[T](event.EventData)
+				err := repo.Save(ctx, wl)
+
+				if err != nil {
+					log.Printf("Error updating work log: %v", err)
+				}
 			}
 		}
 
