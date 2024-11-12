@@ -69,8 +69,8 @@ func EventStream(ctx context.Context, baseUri string, es chan string, topic stri
 					es <- strings.TrimLeft(e, "data: ")
 				case strings.HasPrefix(e, "id: "):
 					log.Printf("Id: %s\n", strings.TrimLeft(e, "id: "))
-					//scanner.Scan()
-					//scanner.Text()
+					scanner.Scan()
+					scanner.Text()
 					lastId = strings.TrimLeft(e, "id: ")
 				default:
 					log.Printf("Unknown: %s\n", e)
