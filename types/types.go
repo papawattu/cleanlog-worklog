@@ -26,3 +26,7 @@ type UpdateWorkRequest struct {
 	Date        string `json:"date"`
 	TaskIds     []int  `json:"taskIds"`
 }
+
+type AddTaskRequest struct {
+	TaskId int `json:"taskId"`
+}

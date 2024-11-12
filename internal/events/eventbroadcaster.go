@@ -71,17 +71,9 @@ func (eb *EventBroadcaster[T, S]) Save(ctx context.Context, e T) error {
 
 	var evt string
 
-	id, err := eb.repo.GetId(ctx, e)
+	id, _ := eb.repo.GetId(ctx, e)
 
-	if err != nil {
-		return err
-	}
-
-	ok, err := eb.repo.Exists(ctx, id)
-
-	if err != nil {
-		return err
-	}
+	ok, _ := eb.repo.Exists(ctx, id)
 
 	if ok {
 		slog.Info("Work log already exists", "ID", id)

@@ -39,22 +39,27 @@ func inlineTasks(tasks []models.Task) []int {
 func (wc *WorkController) PostRequest(ctx context.Context) func(http.ResponseWriter, *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		startDate := time.Now()
+
 		slog.Debug("Creating work log")
 		var t types.CreateWorkRequest
 
 		json.NewDecoder(r.Body).Decode(&t)
 
-		startDate, err := time.Parse("2006-01-02", t.Date)
-
-		if err != nil {
-			slog.Error("Invalid date format %v", err)
-			http.Error(w, "Invalid date format", http.StatusBadRequest)
-			return
+		if t.Date != "" {
+			var err error
+			startDate, err = time.Parse("2006-01-02", t.Date)
+			if err != nil {
+				slog.Error("Invalid date format", "error", err)
+				http.Error(w, "Invalid date format", http.StatusBadRequest)
+				return
+			}
 		}
 
 		workID, err := wc.workService.CreateWorkLog(ctx, t.Description, startDate)
 		if err != nil {
-			slog.Error("Error starting work: %v", err)
+			slog.Error("Error starting work", "error", err)
 		}
 
 		w.Header().Set("Location", "/api/worklog/"+strconv.Itoa(workID))
@@ -94,7 +99,7 @@ func (wc *WorkController) PatchRequest(ctx context.Context) func(http.ResponseWr
 			}
 		}
 
-		err = wc.workService.UpdateWorkLog(ctx, id, t.Description, startDate, t.TaskIds)
+		err = wc.workService.UpdateWorkLog(ctx, id, t.Description, startDate)
 		if err != nil {
 			http.Error(w, "Error updating work", http.StatusNotFound)
 			return
@@ -216,17 +221,87 @@ func (wc *WorkController) DeleteRequest(ctx context.Context) func(http.ResponseW
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
+func (wc *WorkController) PostTaskRequest(ctx context.Context) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		workId := r.PathValue("workid")
+		if workId == "" {
+			http.Error(w, "workId is required", http.StatusBadRequest)
+			return
+		}
+
+		id, err := strconv.Atoi(workId)
+		if err != nil {
+			http.Error(w, "workId must be an integer", http.StatusBadRequest)
+			return
+		}
+
+		//slog.Debug("Creating task for work log by id", slog.Int("task id", id), slog.Int("work id", id))
+
+		var t types.AddTaskRequest
+
+		json.NewDecoder(r.Body).Decode(&t)
+
+		err = wc.workService.AddTaskToWorkLog(ctx, id, models.Task{TaskID: t.TaskId})
+		if err != nil {
+			http.Error(w, "Error creating task", http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Location", "/api/worklog/"+strconv.Itoa(id)+"/task/"+strconv.Itoa(t.TaskId))
+		w.WriteHeader(http.StatusCreated)
+	}
+}
+func (wc *WorkController) DeleteTaskRequest(ctx context.Context) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		workId := r.PathValue("workid")
+		if workId == "" {
+			http.Error(w, "workId is required", http.StatusBadRequest)
+			return
+		}
+
+		id, err := strconv.Atoi(workId)
+		if err != nil {
+			http.Error(w, "workId must be an integer", http.StatusBadRequest)
+			return
+		}
+
+		taskId := r.PathValue("taskid")
+		if taskId == "" {
+			http.Error(w, "taskId is required", http.StatusBadRequest)
+			return
+		}
+
+		tid, err := strconv.Atoi(taskId)
+		if err != nil {
+			http.Error(w, "taskId must be an integer", http.StatusBadRequest)
+			return
+		}
+
+		slog.Debug("Deleting task for work log by id", slog.Int("work id", id), slog.Int("task id", tid))
+
+		err = wc.workService.RemoveTaskFromWorkLog(ctx, id, models.Task{TaskID: tid})
+		if err != nil {
+			http.Error(w, "Error deleting task", http.StatusNotFound)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
 func NewWorkController(ctx context.Context, server *http.ServeMux,
 	workService services.WorkService) *WorkController {
 
 	wc := &WorkController{
 		workService: workService,
 		controllers: ControllerPaths{
-			"POST /worklog":            (*WorkController).PostRequest,
-			"GET /worklog/{workid}":    (*WorkController).GetRequestById,
-			"GET /worklog/":            (*WorkController).GetRequestAll,
-			"DELETE /worklog/{workid}": (*WorkController).DeleteRequest,
-			"PATCH /worklog/{workid}":  (*WorkController).PatchRequest,
+			"POST /worklog":                          (*WorkController).PostRequest,
+			"GET /worklog/{workid}":                  (*WorkController).GetRequestById,
+			"GET /worklog/":                          (*WorkController).GetRequestAll,
+			"DELETE /worklog/{workid}":               (*WorkController).DeleteRequest,
+			"PATCH /worklog/{workid}":                (*WorkController).PatchRequest,
+			"PUT /worklog/{workid}":                  (*WorkController).PatchRequest,
+			"POST /worklog/{workid}/task":            (*WorkController).PostTaskRequest,
+			"DELETE /worklog/{workid}/task/{taskid}": (*WorkController).DeleteTaskRequest,
 		},
 	}
 
