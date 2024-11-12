@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"log/slog"
 	"math/rand"
 	"time"
 
@@ -45,7 +46,7 @@ func (wsi *WorkServiceImp) CreateWorkLog(ctx context.Context, description string
 
 	err = wsi.repo.Save(ctx, &wl)
 	if err != nil {
-		log.Fatalf("Error saving work log: %v", err)
+		slog.Error("Error saving work log", "error", err)
 		return 0, err
 	}
 	return nextId, nil

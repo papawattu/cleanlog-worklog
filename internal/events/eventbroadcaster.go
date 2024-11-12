@@ -208,21 +208,21 @@ func NewEventBroadcaster[T any, S comparable](ctx context.Context, repo repo.Rep
 			switch event.EventType {
 			case eventTypePrefix + Created:
 				log.Printf("Received work log created event %v", event.EventData)
-				wl := decodeWorkLog[T](event.EventData)
+				wl := decodeEntity[T](event.EventData)
 				err := repo.Save(ctx, wl)
 				log.Printf("Saved work log %v", wl)
 				if err != nil {
 					log.Printf("Error saving work log: %v", err)
 				}
 			case eventTypePrefix + Deleted:
-				e := decodeWorkLog[T](event.EventData)
+				e := decodeEntity[T](event.EventData)
 				err := repo.Delete(ctx, e)
 
 				if err != nil {
 					log.Printf("Error deleting work log: %v", err)
 				}
 			case eventTypePrefix + Updated:
-				wl := decodeWorkLog[T](event.EventData)
+				wl := decodeEntity[T](event.EventData)
 				err := repo.Save(ctx, wl)
 
 				if err != nil {
@@ -240,7 +240,7 @@ func NewEventBroadcaster[T any, S comparable](ctx context.Context, repo repo.Rep
 	}
 }
 
-func decodeWorkLog[T any](data string) T {
+func decodeEntity[T any](data string) T {
 	var wl T
 	err := json.Unmarshal([]byte(data), &wl)
 	if err != nil {
