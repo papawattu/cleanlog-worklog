@@ -60,6 +60,15 @@ func (wl *WorkLog) RemoveTask(t Task) error {
 	return nil
 }
 
+func (wl *WorkLog) HasTask(t Task) bool {
+	for _, task := range wl.Tasks {
+		if task.TaskID == t.TaskID {
+			return true
+		}
+	}
+	return false
+}
+
 func (wl *WorkLog) ChangeDescription(description string) error {
 	wl.WorkLogDescription = description
 	return nil

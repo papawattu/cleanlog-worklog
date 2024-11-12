@@ -67,6 +67,35 @@ func (wri *InMemoryWorkLogRepository) Delete(ctx context.Context, wl *models.Wor
 	delete(wri.WorkLogs, *wl.WorkLogID)
 	return nil
 }
+
+func (wri *InMemoryWorkLogRepository) Update(ctx context.Context, wl *models.WorkLog) error {
+	if wl.WorkLogID == nil {
+		return errors.New("work log ID is required")
+	}
+
+	if _, ok := wri.WorkLogs[*wl.WorkLogID]; !ok {
+		return errors.New("work log not found")
+	}
+
+	wl.LastUpdateDate = time.Now()
+	wri.WorkLogs[*wl.WorkLogID] = wl
+
+	return nil
+}
+
+func (wri *InMemoryWorkLogRepository) GetId(ctx context.Context, wl *models.WorkLog) (int, error) {
+
+	if _, ok := wri.WorkLogs[*wl.WorkLogID]; !ok {
+		return 0, errors.New("work log not found")
+	}
+	return *wl.WorkLogID, nil
+}
+
+func (wri *InMemoryWorkLogRepository) Exists(ctx context.Context, id int) (bool, error) {
+
+	_, ok := wri.WorkLogs[id]
+	return ok, nil
+}
 func NewWorkLogRepository() Repository[*models.WorkLog, int] {
 	return &InMemoryWorkLogRepository{
 		WorkLogs: make(map[int]*models.WorkLog),

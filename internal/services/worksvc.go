@@ -138,10 +138,21 @@ func (wsi *WorkServiceImp) UpdateWorkLog(ctx context.Context, id int, descriptio
 	}
 
 	for _, taskId := range taskIds {
-		err = wl.AddTask(models.Task{TaskID: taskId})
-		if err != nil {
-			log.Fatalf("Error updating tasks: %v", err)
-			return err
+		exists := wl.HasTask(models.Task{TaskID: taskId})
+
+		if !exists {
+
+			err = wl.AddTask(models.Task{TaskID: taskId})
+			if err != nil {
+				log.Fatalf("Error updating tasks: %v", err)
+				return err
+			}
+		} else {
+			err = wl.RemoveTask(models.Task{TaskID: taskId})
+			if err != nil {
+				log.Fatalf("Error updating tasks: %v", err)
+				return err
+			}
 		}
 	}
 	if err != nil {

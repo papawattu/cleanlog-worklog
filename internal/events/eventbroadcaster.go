@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 const (
 	Created      = "Created"
 	Deleted      = "Deleted"
+	Updated      = "Updated"
 	EventUri     = "/event"
 	EventVersion = 1
 )
@@ -67,6 +69,28 @@ func (eb *EventBroadcaster[T, S]) postEvent(event Event) error {
 
 func (eb *EventBroadcaster[T, S]) Save(ctx context.Context, e T) error {
 
+	var evt string
+
+	id, err := eb.repo.GetId(ctx, e)
+
+	if err != nil {
+		return err
+	}
+
+	ok, err := eb.repo.Exists(ctx, id)
+
+	if err != nil {
+		return err
+	}
+
+	if ok {
+		slog.Info("Work log already exists", "ID", id)
+		evt = eb.eventTypePrefix + Updated
+
+	} else {
+		slog.Info("Work log created", "ID", id, "Event", evt)
+		evt = eb.eventTypePrefix + Created
+	}
 	ent, err := json.Marshal(e)
 
 	if err != nil {
@@ -79,7 +103,7 @@ func (eb *EventBroadcaster[T, S]) Save(ctx context.Context, e T) error {
 
 	// Broadcast event
 	event := Event{
-		EventType:    eb.eventTypePrefix + Created,
+		EventType:    evt,
 		EventTime:    time.Now(),
 		EventVersion: EventVersion,
 		EventSHA:     fmt.Sprintf("%x", h.Sum(nil)),
@@ -145,6 +169,12 @@ func (eb *EventBroadcaster[T, S]) Delete(ctx context.Context, e T) error {
 	return nil // eb.repo.DeleteWorkLog(id)
 }
 
+func (eb *EventBroadcaster[T, S]) Exists(ctx context.Context, id S) (bool, error) {
+	return eb.repo.Exists(ctx, id)
+}
+func (eb *EventBroadcaster[T, S]) GetId(ctx context.Context, e T) (S, error) {
+	return eb.repo.GetId(ctx, e)
+}
 func NewEventBroadcaster[T any, S comparable](ctx context.Context, repo repo.Repository[T, S], broadcastUri string, streamUri, topic string, eventTypePrefix string) *EventBroadcaster[T, S] {
 
 	es := make(chan string)
