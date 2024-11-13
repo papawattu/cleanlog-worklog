@@ -8,8 +8,8 @@ import (
 	"math/rand"
 	"time"
 
+	repo "github.com/papawattu/cleanlog-eventstore/repository"
 	"github.com/papawattu/cleanlog-worklog/internal/models"
-	"github.com/papawattu/cleanlog-worklog/internal/repo"
 )
 
 type WorkService interface {

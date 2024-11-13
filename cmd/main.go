@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/papawattu/cleanlog-eventstore/events"
 	"github.com/papawattu/cleanlog-worklog/internal/controllers"
-	"github.com/papawattu/cleanlog-worklog/internal/events"
 	"github.com/papawattu/cleanlog-worklog/internal/middleware"
 	"github.com/papawattu/cleanlog-worklog/internal/repo"
 	"github.com/papawattu/cleanlog-worklog/internal/services"

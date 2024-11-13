@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	repo "github.com/papawattu/cleanlog-eventstore/repository"
 	"github.com/papawattu/cleanlog-worklog/internal/models"
 )
 
@@ -96,7 +97,7 @@ func (wri *InMemoryWorkLogRepository) Exists(ctx context.Context, id int) (bool,
 	_, ok := wri.WorkLogs[id]
 	return ok, nil
 }
-func NewWorkLogRepository() Repository[*models.WorkLog, int] {
+func NewWorkLogRepository() repo.Repository[*models.WorkLog, int] {
 	return &InMemoryWorkLogRepository{
 		WorkLogs: make(map[int]*models.WorkLog),
 	}
