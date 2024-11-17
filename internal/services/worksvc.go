@@ -47,11 +47,11 @@ func (wsi *WorkServiceImp) CreateWorkLog(ctx context.Context, description string
 
 	nextId := nextId()
 	wl.WorkLogID = &nextId
-
-	err = wsi.repo.Save(ctx, &wl)
+	slog.Info("Creating work log", "id", nextId)
+	err = wsi.repo.Create(ctx, &wl)
 	if err != nil {
 		slog.Error("Error saving work log", "error", err)
-		return 0, err
+		return nextId, err
 	}
 	return nextId, nil
 }

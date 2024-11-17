@@ -39,6 +39,7 @@ func inlineTasks(tasks []models.Task) []int {
 func (wc *WorkController) PostRequest(ctx context.Context) func(http.ResponseWriter, *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		slog.Info("Creating work log")
 
 		startDate := time.Now()
 
@@ -70,6 +71,7 @@ func (wc *WorkController) PostRequest(ctx context.Context) func(http.ResponseWri
 
 func (wc *WorkController) PatchRequest(ctx context.Context) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		slog.Info("Updating work log by id")
 		workId := r.PathValue("workid")
 		if workId == "" {
 			http.Error(w, "workId is required", http.StatusBadRequest)
@@ -111,6 +113,7 @@ func (wc *WorkController) PatchRequest(ctx context.Context) func(http.ResponseWr
 
 func (wc *WorkController) GetRequestById(ctx context.Context) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		slog.Info("Getting work log by id")
 
 		ctx := r.Context()
 
@@ -156,7 +159,7 @@ func (wc *WorkController) GetRequestById(ctx context.Context) func(http.Response
 func (wc *WorkController) GetRequestAll(ctx context.Context) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		slog.Debug("Getting all work logs")
+		slog.Info("Getting all work logs")
 
 		// TODO: Implement user id
 
@@ -196,6 +199,7 @@ func (wc *WorkController) GetRequestAll(ctx context.Context) func(http.ResponseW
 func (wc *WorkController) DeleteRequest(ctx context.Context) func(http.ResponseWriter, *http.Request) {
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		slog.Info("Deleting work log by id")
 		workId := r.PathValue("workid")
 		if workId == "" {
 			slog.Error("workId is required")
@@ -223,6 +227,7 @@ func (wc *WorkController) DeleteRequest(ctx context.Context) func(http.ResponseW
 }
 func (wc *WorkController) PostTaskRequest(ctx context.Context) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		slog.Info("Creating task for work log by id")
 		workId := r.PathValue("workid")
 		if workId == "" {
 			http.Error(w, "workId is required", http.StatusBadRequest)
@@ -253,6 +258,7 @@ func (wc *WorkController) PostTaskRequest(ctx context.Context) func(http.Respons
 }
 func (wc *WorkController) DeleteTaskRequest(ctx context.Context) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		slog.Info("Deleting task for work log by id")
 		workId := r.PathValue("workid")
 		if workId == "" {
 			http.Error(w, "workId is required", http.StatusBadRequest)
@@ -294,14 +300,14 @@ func NewWorkController(ctx context.Context, server *http.ServeMux,
 	wc := &WorkController{
 		workService: workService,
 		controllers: ControllerPaths{
-			"POST /worklog":                          (*WorkController).PostRequest,
+			"POST /worklog/{workid}/task/{$}":        (*WorkController).PostTaskRequest,
+			"DELETE /worklog/{workid}/task/{taskid}": (*WorkController).DeleteTaskRequest,
+			"POST /worklog/{$}":                      (*WorkController).PostRequest,
 			"GET /worklog/{workid}":                  (*WorkController).GetRequestById,
 			"GET /worklog/":                          (*WorkController).GetRequestAll,
 			"DELETE /worklog/{workid}":               (*WorkController).DeleteRequest,
 			"PATCH /worklog/{workid}":                (*WorkController).PatchRequest,
 			"PUT /worklog/{workid}":                  (*WorkController).PatchRequest,
-			"POST /worklog/{workid}/task":            (*WorkController).PostTaskRequest,
-			"DELETE /worklog/{workid}/task/{taskid}": (*WorkController).DeleteTaskRequest,
 		},
 	}
 

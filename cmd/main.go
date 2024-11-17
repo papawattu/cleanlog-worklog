@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/papawattu/cleanlog-eventstore/events"
+	common "github.com/papawattu/cleanlog-common"
 	"github.com/papawattu/cleanlog-worklog/internal/controllers"
 	"github.com/papawattu/cleanlog-worklog/internal/middleware"
 	"github.com/papawattu/cleanlog-worklog/internal/repo"
@@ -61,8 +61,10 @@ func main() {
 	if os.Getenv("EVENT_STORE") == "" || os.Getenv("EVENT_STREAM") == "" {
 		workService = services.NewWorkService(ctx, repo.NewWorkLogRepository())
 	} else {
-		eventBroadcaster := events.NewEventBroadcaster(ctx, repo.NewWorkLogRepository(), os.Getenv("EVENT_STORE"), os.Getenv("EVENT_STREAM"), topic, "WorkLog")
+		t := common.NewHttpTransport(os.Getenv("EVENT_STORE"), os.Getenv("EVENT_STREAM"), 10)
+		eventBroadcaster := common.NewEventService(repo.NewWorkLogRepository(), t, topic)
 		workService = services.NewWorkService(ctx, eventBroadcaster)
+
 	}
 
 	if err := startWebServer(port, workService); err != nil {

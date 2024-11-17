@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	repo "github.com/papawattu/cleanlog-eventstore/repository"
+	common "github.com/papawattu/cleanlog-common"
 	"github.com/papawattu/cleanlog-worklog/internal/models"
 )
 
@@ -16,14 +16,25 @@ type InMemoryWorkLogRepository struct {
 	WorkLogs map[int]*models.WorkLog
 }
 
-func (wri *InMemoryWorkLogRepository) Save(ctx context.Context, wl *models.WorkLog) error {
+func (wri *InMemoryWorkLogRepository) Create(ctx context.Context, wl *models.WorkLog) error {
 	if wl.WorkLogID == nil {
 		return errors.New("work log ID is required")
 	}
 
-	// if _, ok := wri.WorkLogs[*wl.WorkLogID]; ok {
-	// 	return errors.New("work log already exists")
-	// }
+	if _, ok := wri.WorkLogs[*wl.WorkLogID]; ok {
+		return errors.New("work log already exists")
+	}
+
+	wl.LastUpdateDate = time.Now()
+	wri.WorkLogs[*wl.WorkLogID] = wl
+
+	log.Printf("Work log saved: %v", wl)
+	return nil
+}
+func (wri *InMemoryWorkLogRepository) Save(ctx context.Context, wl *models.WorkLog) error {
+	if wl.WorkLogID == nil {
+		return errors.New("work log ID is required")
+	}
 
 	wl.LastUpdateDate = time.Now()
 	wri.WorkLogs[*wl.WorkLogID] = wl
@@ -69,21 +80,6 @@ func (wri *InMemoryWorkLogRepository) Delete(ctx context.Context, wl *models.Wor
 	return nil
 }
 
-func (wri *InMemoryWorkLogRepository) Update(ctx context.Context, wl *models.WorkLog) error {
-	if wl.WorkLogID == nil {
-		return errors.New("work log ID is required")
-	}
-
-	if _, ok := wri.WorkLogs[*wl.WorkLogID]; !ok {
-		return errors.New("work log not found")
-	}
-
-	wl.LastUpdateDate = time.Now()
-	wri.WorkLogs[*wl.WorkLogID] = wl
-
-	return nil
-}
-
 func (wri *InMemoryWorkLogRepository) GetId(ctx context.Context, wl *models.WorkLog) (int, error) {
 
 	if _, ok := wri.WorkLogs[*wl.WorkLogID]; !ok {
@@ -97,7 +93,7 @@ func (wri *InMemoryWorkLogRepository) Exists(ctx context.Context, id int) (bool,
 	_, ok := wri.WorkLogs[id]
 	return ok, nil
 }
-func NewWorkLogRepository() repo.Repository[*models.WorkLog, int] {
+func NewWorkLogRepository() common.Repository[*models.WorkLog, int] {
 	return &InMemoryWorkLogRepository{
 		WorkLogs: make(map[int]*models.WorkLog),
 	}

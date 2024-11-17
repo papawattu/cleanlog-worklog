@@ -7,7 +7,7 @@ LABEL org.opencontainers.image.licenses=MIT
 
 ARG USER=nouser
 
-RUN apk add --no-cache make
+RUN apk add --no-cache make git
 
 WORKDIR /app
 
