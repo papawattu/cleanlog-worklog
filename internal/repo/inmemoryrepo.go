@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"errors"
-	"log"
 	"log/slog"
 	"strconv"
 	"time"
@@ -28,7 +27,7 @@ func (wri *InMemoryWorkLogRepository) Create(ctx context.Context, wl *models.Wor
 	wl.LastUpdateDate = time.Now()
 	wri.WorkLogs[*wl.WorkLogID] = wl
 
-	log.Printf("Work log saved: %v", wl)
+	slog.Info("Work log created in repository", "Worklog", wl)
 	return nil
 }
 func (wri *InMemoryWorkLogRepository) Save(ctx context.Context, wl *models.WorkLog) error {
@@ -39,7 +38,7 @@ func (wri *InMemoryWorkLogRepository) Save(ctx context.Context, wl *models.WorkL
 	wl.LastUpdateDate = time.Now()
 	wri.WorkLogs[*wl.WorkLogID] = wl
 
-	log.Printf("Work log saved: %v", wl)
+	slog.Info("Work log saved to repository", "Worklog", wl)
 	return nil
 }
 
