@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"time"
 
-	repo "github.com/papawattu/cleanlog-eventstore/repository"
+	repo "github.com/papawattu/cleanlog-common"
 	"github.com/papawattu/cleanlog-worklog/internal/models"
 )
 
