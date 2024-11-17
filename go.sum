@@ -99,6 +99,8 @@ github.com/papawattu/cleanlog-common v0.0.2 h1:P7OryFBANMQmQTTkK+9mK+Wyp9pZq4hY7
 github.com/papawattu/cleanlog-common v0.0.2/go.mod h1:/84y9efRMpht4uXunUYL/HzvI0q+VV16ztdU8YrwHcM=
 github.com/papawattu/cleanlog-common v0.0.3 h1:08OEMEWxkR6pSKzrpwWSjbz9wVRdHJ+tRb303jIv5N0=
 github.com/papawattu/cleanlog-common v0.0.3/go.mod h1:/84y9efRMpht4uXunUYL/HzvI0q+VV16ztdU8YrwHcM=
+github.com/papawattu/cleanlog-common v0.0.4 h1:8xkykvGjXr0bI9D+Zfg1HMzIDj/yjYvmk+P9ukrwuVU=
+github.com/papawattu/cleanlog-common v0.0.4/go.mod h1:/84y9efRMpht4uXunUYL/HzvI0q+VV16ztdU8YrwHcM=
 github.com/papawattu/cleanlog-eventstore v0.0.1-alpha/go.mod h1:9us0zBuhedwX+BjtxBbDSLq94yt4NLFGqqtzipzqw/c=
 github.com/papawattu/cleanlog-eventstore v0.0.1 h1:5tMgtuV1q2ku1HTddY1qSYJFSJFwjqdQvDk0ae3Fv1Q=
 github.com/papawattu/cleanlog-eventstore v0.0.1/go.mod h1:9us0zBuhedwX+BjtxBbDSLq94yt4NLFGqqtzipzqw/c=
