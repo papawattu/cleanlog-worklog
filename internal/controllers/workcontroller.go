@@ -172,7 +172,7 @@ func (wc *WorkController) GetRequestAll(ctx context.Context) func(http.ResponseW
 		}
 		workLogs, err := wc.workService.GetAllWorkLog(r.Context(), user)
 		if err != nil {
-			slog.Error("Error getting work logs: %v", err)
+			slog.Error("Error getting work logs", "Error", err)
 			http.Error(w, "Error getting work logs", http.StatusNotFound)
 			return
 		}
@@ -299,21 +299,15 @@ func NewWorkController(ctx context.Context, server *http.ServeMux,
 
 	wc := &WorkController{
 		workService: workService,
-		controllers: ControllerPaths{
-			"POST /worklog/{workid}/task/{$}":        (*WorkController).PostTaskRequest,
-			"DELETE /worklog/{workid}/task/{taskid}": (*WorkController).DeleteTaskRequest,
-			"POST /worklog/{$}":                      (*WorkController).PostRequest,
-			"GET /worklog/{workid}":                  (*WorkController).GetRequestById,
-			"GET /worklog/":                          (*WorkController).GetRequestAll,
-			"DELETE /worklog/{workid}":               (*WorkController).DeleteRequest,
-			"PATCH /worklog/{workid}":                (*WorkController).PatchRequest,
-			"PUT /worklog/{workid}":                  (*WorkController).PatchRequest,
-		},
 	}
-
-	for path, handler := range wc.controllers.GetPaths() {
-		server.HandleFunc(path, handler(wc, ctx))
-	}
+	server.HandleFunc("POST /api/worklog/{workid}/task", wc.PostTaskRequest(ctx))
+	server.HandleFunc("DELETE /api/worklog/{workid}/task/{taskid}", wc.DeleteTaskRequest(ctx))
+	server.HandleFunc("POST /api/worklog", wc.PostRequest(ctx))
+	server.HandleFunc("GET /api/worklog/{workid}", wc.GetRequestById(ctx))
+	server.HandleFunc("GET /api/worklog/", wc.GetRequestAll(ctx))
+	server.HandleFunc("PATCH /api/worklog/{workid}", wc.PatchRequest(ctx))
+	server.HandleFunc("PUT /api/worklog/{workid}", wc.PatchRequest(ctx))
+	server.HandleFunc("DELETE /api/worklog/{workid}", wc.DeleteRequest(ctx))
 
 	wc.server = server
 	return wc

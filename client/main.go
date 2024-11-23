@@ -27,7 +27,7 @@ func CreateWorkLog(description string, baseUri string) (string, error) {
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Authorization: Basic amFtaWU6c2ltcHNvbnM=")
+	req.Header.Set("Authorization", "Bearer mytoken")
 	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
@@ -49,16 +49,26 @@ func CreateWorkLog(description string, baseUri string) (string, error) {
 func GetWorkLog(loc string, baseUri string) {
 	url := fmt.Sprintf("%s%s", baseUri, loc)
 
-	var resp *http.Response
-	var err error
 	var count int = 0
 
 	for {
-		resp, err = http.Get(url)
+
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+
 		if err != nil {
 			log.Println("Error:", err)
 			return
 		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer mytoken")
+
+		resp, err := http.DefaultClient.Do(req)
+
+		if err != nil {
+			log.Println("Error:", err)
+			return
+		}
+		defer resp.Body.Close()
 
 		if resp.StatusCode == http.StatusNotFound {
 			if count > 20 {
@@ -71,6 +81,12 @@ func GetWorkLog(loc string, baseUri string) {
 		} else {
 			if resp.StatusCode == http.StatusOK {
 				log.Printf("Work log found at %s\n", url)
+				r := &types.WorkResponse{}
+				if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+					log.Println("Error decoding JSON:", err)
+					return
+				}
+
 				break
 			} else {
 				log.Fatalf("Error: status code %d\n", resp.StatusCode)
@@ -78,20 +94,6 @@ func GetWorkLog(loc string, baseUri string) {
 			}
 		}
 	}
-	if resp != nil {
-
-		defer resp.Body.Close()
-	}
-
-	log.Printf("Body: %v\n", resp.Body)
-	r := &types.WorkResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		log.Println("Error decoding JSON:", err)
-		return
-	}
-
-	log.Printf("Work log: %v", r)
-
 }
 
 func GetAllWorkLogs(baseUri string) {
@@ -103,7 +105,7 @@ func GetAllWorkLogs(baseUri string) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Authorization: Basic amFtaWU6c2ltcHNvbnM=")
+	req.Header.Set("Authorization", "Bearer mytoken")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -132,6 +134,8 @@ func DeleteWorkLog(loc string, baseUri string) {
 		log.Fatalln("Error:", err)
 		return
 	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer mytoken")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

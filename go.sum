@@ -1,3 +1,7 @@
+github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874 h1:N7oVaKyGp8bttX0bfZGmcGkjz7DLQXhAn3DNd3T0ous=
+github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874/go.mod h1:r5xuitiExdLAJ09PR7vBVENGvp4ZuTBeWTGtxuX3K+c=
+github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
+github.com/kelseyhightower/envconfig v1.4.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
 github.com/papawattu/cleanlog-common v0.0.5 h1:kGYj36yCZIl0/XwwY8xGxh91HQiAAp9Bpt4601AdizE=
 github.com/papawattu/cleanlog-common v0.0.5/go.mod h1:/84y9efRMpht4uXunUYL/HzvI0q+VV16ztdU8YrwHcM=
 github.com/papawattu/cleanlog-common v0.0.6 h1:0H46xTgmiLvMwyxf9eIj8/9yCVeYenLicCpgdMGwYhA=
@@ -10,3 +14,7 @@ github.com/papawattu/cleanlog-common v0.0.10 h1:7d3A/4sMLkzPOsQ3xa0Q8GMMgm1MZRjK
 github.com/papawattu/cleanlog-common v0.0.10/go.mod h1:/84y9efRMpht4uXunUYL/HzvI0q+VV16ztdU8YrwHcM=
 github.com/papawattu/cleanlog-common v0.0.11 h1:ftARr9etTwiGLK6gnVLgcOmkbBeVqha3SHI7LxsYHaI=
 github.com/papawattu/cleanlog-common v0.0.11/go.mod h1:/84y9efRMpht4uXunUYL/HzvI0q+VV16ztdU8YrwHcM=
+github.com/papawattu/cleanlog-common v0.0.12-0.20241120211909-ec6412276b22 h1:lIdhx1xJdPxW1N7vIGLxI1/akBcrGlTVOeYDsQY9dR8=
+github.com/papawattu/cleanlog-common v0.0.12-0.20241120211909-ec6412276b22/go.mod h1:r4UIbQ2OKUOV67fhqlEmd6GyKH9ipjL+0Xkf2JDgNJI=
+github.com/papawattu/cleanlog-common v0.0.12-0.20241123124356-a5dda9754e79 h1:AObfVo/Q+X27t9Sxkf0Cxkr9UzMOPAGg5Oqlz2pQNg0=
+github.com/papawattu/cleanlog-common v0.0.12-0.20241123124356-a5dda9754e79/go.mod h1:r4UIbQ2OKUOV67fhqlEmd6GyKH9ipjL+0Xkf2JDgNJI=

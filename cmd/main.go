@@ -4,28 +4,35 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"log/slog"
 	"net/http"
-	"os"
 
+	"github.com/kelseyhightower/envconfig"
 	common "github.com/papawattu/cleanlog-common"
 	"github.com/papawattu/cleanlog-worklog/internal/controllers"
-	"github.com/papawattu/cleanlog-worklog/internal/middleware"
+
+	"github.com/papawattu/cleanlog-worklog/internal/models"
 	"github.com/papawattu/cleanlog-worklog/internal/repo"
 	"github.com/papawattu/cleanlog-worklog/internal/services"
 )
 
+type Config struct {
+	port        string `envconfig:"PORT" default:"3000"`
+	eventStore  string `envconfig:"EVENT_STORE"`
+	eventStream string `envconfig:"EVENT_STREAM"`
+}
+
 func startWebServer(port string, ws services.WorkService) error {
-	stack := middleware.CreateMiddleware(
-		middleware.Recover,
-		middleware.Logging,
-		middleware.Authenticated,
+
+	stack := common.CreateMiddleware(
+		common.Recover,
+		common.Logging,
+		common.Authenticated,
 	)
 
 	router := http.NewServeMux()
 
 	api := http.NewServeMux()
-	api.Handle("/api/", http.StripPrefix("/api", router))
+	api.Handle("/", router)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
@@ -40,6 +47,11 @@ func startWebServer(port string, ws services.WorkService) error {
 }
 func main() {
 
+	cfg := Config{}
+	err := envconfig.Process("", &cfg)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 	ctx := context.Background()
 
 	var (
@@ -47,57 +59,17 @@ func main() {
 		port        string
 	)
 
-	port = "3000"
-
-	if os.Getenv("PORT") != "" {
-		port = os.Getenv("PORT")
-	}
-
-	if os.Getenv("EVENT_STORE") == "" || os.Getenv("EVENT_STREAM") == "" {
+	if cfg.eventStore == "" || cfg.eventStream == "" {
 		workService = services.NewWorkService(ctx, repo.NewWorkLogRepository())
 	} else {
-		t := common.NewHttpTransport(os.Getenv("EVENT_STORE"), os.Getenv("EVENT_STREAM"), 0)
-
-		es := common.NewEventService(repo.NewWorkLogRepository(), t, "WorkLog")
+		t := common.NewHttpTransport(cfg.eventStore, cfg.eventStream, 0)
+		repo := common.NewMemcacheRepository[*models.WorkLog]("localhost:11211")
+		es := common.NewEventService(repo, t, "WorkLog")
 
 		workService = services.NewWorkService(ctx, es)
 
-		//es.StartEventRunner(ctx)
-
-		go func() {
-
-			slog.Info("Starting event runner")
-
-			err := es.Connect(ctx)
-
-			if err != nil {
-				slog.Error("Error connecting to event store", "error", err)
-				return
-			}
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-					slog.Info("Waiting for event")
-					ev, err := es.NextEvent()
-
-					slog.Info("Got event", "event", ev, "error", err)
-					if err != nil {
-						log.Fatal(err)
-					}
-
-					if ev != nil {
-						slog.Info("Handling event", "event", *ev)
-						es.HandleEvent(*ev)
-					} else {
-						slog.Info("No event")
-					}
-				}
-			}
-		}()
+		es.StartEventRunner(ctx)
 	}
-
 	if err := startWebServer(port, workService); err != nil {
 		log.Fatal(err)
 	}

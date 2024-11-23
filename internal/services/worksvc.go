@@ -6,6 +6,7 @@ import (
 	"log"
 	"log/slog"
 	"math/rand"
+	"strconv"
 	"time"
 
 	repo "github.com/papawattu/cleanlog-common"
@@ -30,7 +31,7 @@ type WorkService interface {
 
 type WorkServiceImp struct {
 	ctx  context.Context
-	repo repo.Repository[*models.WorkLog, int]
+	repo repo.Repository[*models.WorkLog, string]
 }
 
 func nextId() int {
@@ -58,7 +59,7 @@ func (wsi *WorkServiceImp) CreateWorkLog(ctx context.Context, description string
 
 func (wsi *WorkServiceImp) LogWork(ctx context.Context, id int, t models.Task) error {
 
-	wl, err := wsi.repo.Get(ctx, id)
+	wl, err := wsi.repo.Get(ctx, strconv.Itoa(id))
 	if err != nil {
 		log.Fatalf("Error getting work log: %v", err)
 		return err
@@ -75,7 +76,7 @@ func (wsi *WorkServiceImp) LogWork(ctx context.Context, id int, t models.Task) e
 
 func (wsi *WorkServiceImp) DeleteWorkLog(ctx context.Context, id int) error {
 
-	wl, err := wsi.repo.Get(ctx, id)
+	wl, err := wsi.repo.Get(ctx, strconv.Itoa(id))
 	if err != nil {
 		log.Fatalf("Error getting work log: %v", err)
 		return err
@@ -101,7 +102,7 @@ func (wsi *WorkServiceImp) DeleteWorkLog(ctx context.Context, id int) error {
 
 func (wsi *WorkServiceImp) GetWorkLog(ctx context.Context, id int) (*models.WorkLog, error) {
 
-	wl, err := wsi.repo.Get(ctx, id)
+	wl, err := wsi.repo.Get(ctx, strconv.Itoa(id))
 
 	if err != nil {
 		log.Fatalf("Error getting work log: %v", err)
@@ -124,7 +125,7 @@ func (wsi *WorkServiceImp) GetAllWorkLog(ctx context.Context, user int) ([]*mode
 
 func (wsi *WorkServiceImp) UpdateWorkLog(ctx context.Context, id int, description string, date time.Time) error {
 
-	wl, err := wsi.repo.Get(ctx, id)
+	wl, err := wsi.repo.Get(ctx, strconv.Itoa(id))
 	if err != nil {
 		log.Fatalf("Error getting work log: %v", err)
 		return err
@@ -153,7 +154,7 @@ func (wsi *WorkServiceImp) UpdateWorkLog(ctx context.Context, id int, descriptio
 
 func (wsi *WorkServiceImp) AddTaskToWorkLog(ctx context.Context, id int, t models.Task) error {
 
-	wl, err := wsi.repo.Get(ctx, id)
+	wl, err := wsi.repo.Get(ctx, strconv.Itoa(id))
 	if err != nil {
 		log.Fatalf("Error getting work log: %v", err)
 		return err
@@ -180,7 +181,7 @@ func (wsi *WorkServiceImp) AddTaskToWorkLog(ctx context.Context, id int, t model
 
 func (wsi *WorkServiceImp) RemoveTaskFromWorkLog(ctx context.Context, id int, t models.Task) error {
 
-	wl, err := wsi.repo.Get(ctx, id)
+	wl, err := wsi.repo.Get(ctx, strconv.Itoa(id))
 	if err != nil {
 		log.Fatalf("Error getting work log: %v", err)
 		return err
@@ -204,7 +205,7 @@ func (wsi *WorkServiceImp) RemoveTaskFromWorkLog(ctx context.Context, id int, t 
 
 	return nil
 }
-func NewWorkService(ctx context.Context, repo repo.Repository[*models.WorkLog, int]) WorkService {
+func NewWorkService(ctx context.Context, repo repo.Repository[*models.WorkLog, string]) WorkService {
 
 	return &WorkServiceImp{
 		ctx:  ctx,

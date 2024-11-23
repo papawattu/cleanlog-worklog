@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/papawattu/cleanlog-worklog/internal/models"
@@ -16,27 +18,39 @@ import (
 )
 
 var (
-	location    string
-	workLogRepo = repo.NewWorkLogRepository()
-	workService = services.NewWorkService(context.Background(), workLogRepo)
+	location     string
+	taskLocation string
+	workLogRepo  = repo.NewWorkLogRepository()
+	workService  = services.NewWorkService(context.Background(), workLogRepo)
 )
 
+func GetWorkLogByID(id int) *models.WorkLog {
+	wl, err := workService.GetWorkLog(context.Background(), id)
+	if err != nil {
+		return nil
+	}
+	return wl
+}
 func TestGetController(t *testing.T) {
 
-	controllers := NewWorkController(context.Background(), http.NewServeMux(), workService)
+	ctx := context.Background()
+
+	ctx = context.WithValue(ctx, "user", 0)
+
+	controllers := NewWorkController(ctx, http.NewServeMux(), workService)
 
 	server := httptest.NewServer(controllers.server)
 
 	defer server.Close()
 
-	r, err := http.Get(server.URL + "/api/worklog/")
+	r, err := http.Get(server.URL + "/api/worklog/1")
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if r.StatusCode != http.StatusOK {
-		t.Fatalf(t.Name()+"Expected status code %v, got %v", http.StatusOK, r.StatusCode)
+	if r.StatusCode != http.StatusNotFound {
+		t.Fatalf(t.Name()+"Expected status code %v, got %v", http.StatusNotFound, r.StatusCode)
 	}
 
 	t.Log("Test passed")
@@ -45,7 +59,11 @@ func TestGetController(t *testing.T) {
 
 func TestCreateWorkLogController(t *testing.T) {
 
-	controllers := NewWorkController(context.Background(), http.NewServeMux(), workService)
+	ctx := context.Background()
+
+	ctx = context.WithValue(ctx, "user", 0)
+
+	controllers := NewWorkController(ctx, http.NewServeMux(), workService)
 
 	server := httptest.NewServer(controllers.server)
 
@@ -80,7 +98,11 @@ func TestGetWorkLogController(t *testing.T) {
 		t.Skip("Skipping TestGetWorkLogController because location is not set")
 	}
 
-	controllers := NewWorkController(context.Background(), http.NewServeMux(), workService)
+	ctx := context.Background()
+
+	ctx = context.WithValue(ctx, "user", 0)
+
+	controllers := NewWorkController(ctx, http.NewServeMux(), workService)
 
 	server := httptest.NewServer(controllers.server)
 
@@ -114,6 +136,171 @@ func TestGetWorkLogController(t *testing.T) {
 		t.Fatalf("Expected WorkLogDate to be '2021-01-01', got %v", wlr.Date)
 	}
 	t.Log("Test passed")
+
+}
+
+func TestUpdateWorkLogController(t *testing.T) {
+
+	if location == "" {
+		t.Error("Location is not set")
+		t.FailNow()
+		return
+	}
+
+	ctx := context.Background()
+
+	ctx = context.WithValue(ctx, "user", 0)
+
+	controllers := NewWorkController(ctx, http.NewServeMux(), workService)
+
+	server := httptest.NewServer(controllers.server)
+
+	defer server.Close()
+
+	jsonStr := []byte(`{"description":"Updated work log", "date":"2021-01-01"}`)
+
+	req, err := http.NewRequest(http.MethodPut, server.URL+location, bytes.NewReader(jsonStr))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := server.Client().Do(req)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if r.StatusCode != http.StatusNoContent {
+		t.Fatalf("Expected status code %v, got %v", http.StatusNoContent, r.StatusCode)
+	}
+
+}
+func TestAddTaskToWorkLogController(t *testing.T) {
+
+	if location == "" {
+		t.Error("Location is not set")
+		t.FailNow()
+		return
+	}
+
+	ctx := context.Background()
+
+	ctx = context.WithValue(ctx, "user", 0)
+
+	controllers := NewWorkController(ctx, http.NewServeMux(), workService)
+
+	server := httptest.NewServer(controllers.server)
+
+	defer server.Close()
+
+	jsonStr := []byte(`{"taskId":123}`)
+
+	t.Logf("Location: %s", server.URL+location)
+
+	s := strings.Split(location, "/")
+	id := s[len(s)-1]
+	idInt, err := strconv.Atoi(id)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	wl := GetWorkLogByID(idInt)
+
+	if wl == nil {
+		t.Fatal(err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, server.URL+location+"/task", bytes.NewReader(jsonStr))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := server.Client().Do(req)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if r.StatusCode != http.StatusCreated {
+		t.Fatalf("Expected status code %v, got %v", http.StatusCreated, r.StatusCode)
+	}
+
+	taskLocation = r.Header.Get("Location")
+
+	t.Logf("Task Location: %s", location)
+
+	if taskLocation == "" {
+		t.Fatalf("Expected Location header to be set")
+	}
+}
+func TestDeleteTaskFromWorkLogController(t *testing.T) {
+
+	if location == "" || taskLocation == "" {
+		t.Error("Locations are not set")
+		t.FailNow()
+		return
+	}
+	ctx := context.Background()
+
+	ctx = context.WithValue(ctx, "user", 0)
+
+	controllers := NewWorkController(ctx, http.NewServeMux(), workService)
+
+	server := httptest.NewServer(controllers.server)
+
+	defer server.Close()
+
+	req, err := http.NewRequest(http.MethodDelete, server.URL+taskLocation, nil)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := server.Client().Do(req)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if r.StatusCode != http.StatusNoContent {
+		t.Fatalf("Expected status code %v, got %v", http.StatusNoContent, r.StatusCode)
+	}
+
+}
+func TestDeleteWorkLogController(t *testing.T) {
+
+	if location == "" {
+		t.Error("Location is not set")
+		t.FailNow()
+		return
+	}
+	ctx := context.Background()
+
+	ctx = context.WithValue(ctx, "user", 0)
+
+	controllers := NewWorkController(ctx, http.NewServeMux(), workService)
+
+	server := httptest.NewServer(controllers.server)
+
+	defer server.Close()
+
+	req, err := http.NewRequest(http.MethodDelete, server.URL+location, nil)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := server.Client().Do(req)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if r.StatusCode != http.StatusNoContent {
+		t.Fatalf("Expected status code %v, got %v", http.StatusNoContent, r.StatusCode)
+	}
 
 }
 func TestInlineTasksWithEmptyTasks(t *testing.T) {
