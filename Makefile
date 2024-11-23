@@ -2,7 +2,13 @@
 
 all: build client
 
-build:
+deps: 
+	@go mod tidy
+	@go mod vendor
+	@go mod verify
+	@go mod download
+	@go get ./...
+build: deps test
 	@go build -o bin/worklog ./cmd/main.go
 
 client:
@@ -26,7 +32,7 @@ docker-build:
 docker-push: docker-build
 	@docker push ghcr.io/papawattu/cleanlog-worklog:latest
 
-test:
+test: 
 	@go test -v ./...
 
 coverage:
