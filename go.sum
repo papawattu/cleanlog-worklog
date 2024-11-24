@@ -2,5 +2,5 @@ github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874 h1:N7oVaKyGp8b
 github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874/go.mod h1:r5xuitiExdLAJ09PR7vBVENGvp4ZuTBeWTGtxuX3K+c=
 github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
 github.com/kelseyhightower/envconfig v1.4.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
-github.com/papawattu/cleanlog-common v0.0.12-0.20241123124356-a5dda9754e79 h1:AObfVo/Q+X27t9Sxkf0Cxkr9UzMOPAGg5Oqlz2pQNg0=
-github.com/papawattu/cleanlog-common v0.0.12-0.20241123124356-a5dda9754e79/go.mod h1:r4UIbQ2OKUOV67fhqlEmd6GyKH9ipjL+0Xkf2JDgNJI=
+github.com/papawattu/cleanlog-common v0.0.12-0.20241124133429-cb95569e6a29 h1:xhM6fZoclG+B1Ej11XAKPGIAfPIs2BCQ3JA+tVNpbwk=
+github.com/papawattu/cleanlog-common v0.0.12-0.20241124133429-cb95569e6a29/go.mod h1:ZhrVwOvDcMykEhy6od8R7tb+BK1zwimTXElPsgQbSWY=

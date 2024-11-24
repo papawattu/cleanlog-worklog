@@ -160,10 +160,6 @@ func (wsi *WorkServiceImp) AddTaskToWorkLog(ctx context.Context, id int, t model
 		return err
 	}
 
-	if wl == nil {
-		return errors.New("Work log not found")
-	}
-
 	err = wl.AddTask(t)
 	if err != nil {
 		log.Fatalf("Error adding task: %v", err)

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	common "github.com/papawattu/cleanlog-common"
 	"github.com/papawattu/cleanlog-worklog/internal/models"
-	"github.com/papawattu/cleanlog-worklog/internal/repo"
 	"github.com/papawattu/cleanlog-worklog/internal/services"
 	"github.com/papawattu/cleanlog-worklog/types"
 )
@@ -20,7 +20,7 @@ import (
 var (
 	location     string
 	taskLocation string
-	workLogRepo  = repo.NewWorkLogRepository()
+	workLogRepo  = common.NewInMemoryRepository[*models.WorkLog]()
 	workService  = services.NewWorkService(context.Background(), workLogRepo)
 )
 

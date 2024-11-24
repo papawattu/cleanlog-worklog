@@ -5,13 +5,14 @@ import (
 	"testing"
 	"time"
 
+	common "github.com/papawattu/cleanlog-common"
 	repo "github.com/papawattu/cleanlog-common"
 	"github.com/papawattu/cleanlog-worklog/internal/models"
-	local "github.com/papawattu/cleanlog-worklog/internal/repo"
 	"github.com/papawattu/cleanlog-worklog/internal/services"
 )
 
 func TestWorkServiceImp_CreateWorkLog(t *testing.T) {
+
 	type fields struct {
 		ctx  context.Context
 		repo repo.Repository[*models.WorkLog, string]
@@ -32,21 +33,7 @@ func TestWorkServiceImp_CreateWorkLog(t *testing.T) {
 			name: "Create work log",
 			fields: fields{
 				ctx:  context.Background(),
-				repo: local.NewWorkLogRepository(),
-			},
-			args: args{
-				ctx:         context.Background(),
-				description: "Test work log",
-				date:        time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC),
-			},
-			want:    0,
-			wantErr: false,
-		},
-		{
-			name: "Create work log",
-			fields: fields{
-				ctx:  context.Background(),
-				repo: local.NewWorkLogRepository(),
+				repo: common.NewInMemoryRepository[*models.WorkLog](),
 			},
 			args: args{
 				ctx:         context.Background(),
@@ -68,13 +55,19 @@ func TestWorkServiceImp_CreateWorkLog(t *testing.T) {
 				t.Errorf("WorkServiceImp.CreateWorkLog() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
+			t.Logf("WorkServiceImp.CreateWorkLog() = %v", got)
 			wl, err := wsi.GetWorkLog(tt.args.ctx, got)
 			if err != nil {
 				t.Errorf("WorkServiceImp.GetWorkLog() error = %v", err)
 			}
+			if wl == nil {
+				t.Errorf("WorkServiceImp.GetWorkLog() = %v, want %v", wl, tt.want)
+			}
 			if wl.WorkLogDescription != tt.args.description {
-				t.Errorf("WorkServiceImp.GetWorkLog() = %v, want %v", wl.WorkLogDescription, tt.args.description)
+				t.Errorf("WorkServiceImp.GetWorkLog().WorkLogDescription = %v, want %v", wl.WorkLogDescription, tt.args.description)
+			}
+			if wl.WorkLogDate != tt.args.date {
+				t.Errorf("WorkServiceImp.GetWorkLog().WorkLogDate = %v, want %v", wl.WorkLogDate, tt.args.date)
 			}
 
 		})

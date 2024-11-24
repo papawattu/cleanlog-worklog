@@ -1,19 +1,23 @@
 package models
 
-import "time"
+import (
+	"strconv"
+	"time"
+
+	common "github.com/papawattu/cleanlog-common"
+)
 
 type Task struct {
 	TaskID int
 }
 type WorkLog struct {
+	common.BaseEntity[int]
 	WorkLogID          *int
 	WorkLogDate        time.Time
 	WorkLogTimeInSecs  int
 	WorkLogDescription string
 	Tasks              []Task
 	UserID             int
-	CreationDate       time.Time
-	LastUpdateDate     time.Time
 }
 type Work interface {
 	LogWork(WorkLog) error
@@ -25,8 +29,6 @@ func NewWorkLog(description string, date time.Time) (WorkLog, error) {
 		WorkLogID:          nil,
 		WorkLogDate:        date,
 		WorkLogDescription: description,
-		CreationDate:       time.Now(),
-		LastUpdateDate:     time.Now(),
 		Tasks:              make([]Task, 0),
 		UserID:             0,
 	}
@@ -72,4 +74,19 @@ func (wl *WorkLog) HasTask(t Task) bool {
 func (wl *WorkLog) ChangeDescription(description string) error {
 	wl.WorkLogDescription = description
 	return nil
+}
+
+func (wl *WorkLog) ChangeDate(date time.Time) error {
+	wl.WorkLogDate = date
+	return nil
+}
+
+func (wl *WorkLog) ChangeUserID(id int) error {
+
+	wl.UserID = id
+	return nil
+}
+
+func (wl *WorkLog) GetID() string {
+	return strconv.Itoa(*wl.WorkLogID)
 }

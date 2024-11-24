@@ -4,21 +4,21 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/kelseyhightower/envconfig"
 	common "github.com/papawattu/cleanlog-common"
 	"github.com/papawattu/cleanlog-worklog/internal/controllers"
-
 	"github.com/papawattu/cleanlog-worklog/internal/models"
-	"github.com/papawattu/cleanlog-worklog/internal/repo"
+
 	"github.com/papawattu/cleanlog-worklog/internal/services"
 )
 
 type Config struct {
-	port        string `envconfig:"PORT" default:"3000"`
-	eventStore  string `envconfig:"EVENT_STORE"`
-	eventStream string `envconfig:"EVENT_STREAM"`
+	Port        string `envconfig:"PORT" default:"3000"`
+	EventStore  string `envconfig:"EVENT_STORE"`
+	EventStream string `envconfig:"EVENT_STREAM"`
 }
 
 func startWebServer(port string, ws services.WorkService) error {
@@ -47,30 +47,32 @@ func startWebServer(port string, ws services.WorkService) error {
 }
 func main() {
 
-	cfg := Config{}
-	err := envconfig.Process("", &cfg)
+	var cfg Config
+
+	err := envconfig.Process("worklog", &cfg)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
 	ctx := context.Background()
 
 	var (
 		workService services.WorkService
-		port        string
 	)
 
-	if cfg.eventStore == "" || cfg.eventStream == "" {
-		workService = services.NewWorkService(ctx, repo.NewWorkLogRepository())
+	if cfg.EventStore == "" || cfg.EventStream == "" {
+		workService = services.NewWorkService(ctx, common.NewInMemoryRepository[*models.WorkLog]())
 	} else {
-		t := common.NewHttpTransport(cfg.eventStore, cfg.eventStream, 0)
-		repo := common.NewMemcacheRepository[*models.WorkLog]("localhost:11211")
+		t := common.NewHttpTransport(cfg.EventStore, cfg.EventStream, 0)
+		repo := common.NewMemcacheRepository[*models.WorkLog, string]("localhost:11211", "worklog", nil)
 		es := common.NewEventService(repo, t, "WorkLog")
 
 		workService = services.NewWorkService(ctx, es)
 
 		es.StartEventRunner(ctx)
 	}
-	if err := startWebServer(port, workService); err != nil {
+	slog.Info("Starting Work Log server", "port", cfg.Port)
+	if err := startWebServer(cfg.Port, workService); err != nil {
 		log.Fatal(err)
 	}
 
