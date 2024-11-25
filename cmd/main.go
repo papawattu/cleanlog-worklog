@@ -64,7 +64,7 @@ func main() {
 		workService = services.NewWorkService(ctx, common.NewInMemoryRepository[*models.WorkLog]())
 	} else {
 		t := common.NewHttpTransport(cfg.EventStore, cfg.EventStream, 0)
-		repo := common.NewMemcacheRepository[*models.WorkLog, string]("localhost:11211", "worklog", nil)
+		repo := common.NewMemcacheRepository[*models.WorkLog]("localhost:11211", "worklog", nil)
 		es := common.NewEventService(repo, t, "WorkLog")
 
 		workService = services.NewWorkService(ctx, es)
